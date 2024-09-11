@@ -1,13 +1,16 @@
-keras==3.5.0
-matplotlib @ file:///croot/matplotlib-suite_1713336378214/work
-numpy @ file:///croot/numpy_and_numpy_base_1708638617955/work/dist/numpy-1.26.4-cp311-cp311-linux_x86_64.whl#sha256=5f96f274d410a1682519282ae769c877d32fdbf171aa8badec7bf5e1d3a1748a
-opencv-python==4.10.0.84
-pandas @ file:///croot/pandas_1718308974269/work/dist/pandas-2.2.2-cp311-cp311-linux_x86_64.whl#sha256=3c7ce50f9f519c785bd4cdb28a0ca71f85a541f3d27b25aa9da770f953e7f2e9
-scikit-learn @ file:///croot/scikit-learn_1721921875708/work
-scipy @ file:///croot/scipy_1717521478074/work/dist/scipy-1.13.1-cp311-cp311-linux_x86_64.whl#sha256=f0a29afe8e78f15653c9afe02349a3462e4e9e7131c5e68b77b70fd68d25e6a2
-seaborn @ file:///croot/seaborn_1718302919398/work
-tensorflow==2.17.0
-ViTables==3.0.3
-h5py
-PIL
-cv2
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: linux-64
+h5py=3.11.0=py311h865a13c_0
+keras=3.5.0=pypi_0
+matplotlib=3.8.4=py311h06a4308_0
+numpy=1.26.4=py311h08b1b3b_0
+opencv-python=4.10.0.84=pypi_0
+pandas=2.2.2=py311ha02d727_0
+pillow=10.4.0=py311h5eee18b_0
+python=3.11.9=h955ad1f_0
+pytorch=2.3.0=cpu_py311ha0631a7_0
+scikit-learn=1.5.1=py311ha02d727_0
+scipy=1.13.1=py311h08b1b3b_0
+seaborn=0.13.2=py311h06a4308_0
+tensorflow=2.17.0=pypi_0
