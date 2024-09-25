@@ -8,7 +8,7 @@ provider "aws" {
 # Define the key pair for SSH access
 resource "aws_key_pair" "deployer_key" {
   key_name   = "deployer_key"
-  public_key = file("~/.ssh/id_rsa.pub")  # Adjust to your actual public key location
+  public_key =  var.SSH_PUBLIC_KEY  # Utilisation de la clé publique via GitHub Secrets
 }
 
 # Define security group for EC2

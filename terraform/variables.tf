@@ -14,3 +14,8 @@ variable "AWS_REGION" {
   type        = string
   default     = "us-east-1"  # Default region, adjust if necessary
 }
+
+variable "SSH_PUBLIC_KEY" {
+  description = "For SSH access"
+  type        = string 
+}

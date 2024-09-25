@@ -26,11 +26,15 @@ jobs:
     - name: Terraform Plan
       run: terraform plan
       working-directory: terraform/  # Spécifier le dossier contenant les fichiers .tf
+      env:
+        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}  # Injecte la clé publique depuis les secrets GitHub
 
     - name: Terraform Apply
       id: apply
       run: terraform apply -auto-approve
       working-directory: terraform/  # Spécifier le dossier contenant les fichiers .tf
+      env:
+        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}  # Injecte la clé publique depuis les secrets GitHub
 
     - name: Get EC2 Public IP
       id: ec2_ip
