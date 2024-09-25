@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - ingeneurie
+      - ingeneurie 
 
 jobs:
   terraform:
@@ -21,13 +21,16 @@ jobs:
 
     - name: Terraform Init
       run: terraform init
+      working-directory: terraform/  # Spécifier le dossier contenant les fichiers .tf
 
     - name: Terraform Plan
       run: terraform plan
+      working-directory: terraform/  # Spécifier le dossier contenant les fichiers .tf
 
     - name: Terraform Apply
       id: apply
       run: terraform apply -auto-approve
+      working-directory: terraform/  # Spécifier le dossier contenant les fichiers .tf
 
     - name: Get EC2 Public IP
       id: ec2_ip
