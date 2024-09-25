@@ -57,7 +57,3 @@ resource "aws_instance" "app_server" {
     command = "echo ${self.public_ip} > ec2_public_ip.txt"
   }
 }
-
-output "ec2_public_ip" {
-  value = aws_instance.app_server.public_ip
-}
