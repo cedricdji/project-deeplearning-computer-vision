@@ -1,14 +1,14 @@
-
 provider "aws" {
-  region     = var.AWS_REGION
-  access_key = var.AWS_ACCESS_KEY_ID
-  secret_key = var.AWS_SECRET_ACCESS_KEY
+  region        = var.AWS_REGION
+  access_key    = var.AWS_ACCESS_KEY_ID
+  secret_key    = var.AWS_SECRET_ACCESS_KEY
+  token         = var.AWS_SESSION_TOKEN  # Ajout du token temporaire
 }
 
 # Define the key pair for SSH access
 resource "aws_key_pair" "deployer_key" {
   key_name   = "deployer_key"
-  public_key =  var.SSH_PUBLIC_KEY  # Utilisation de la clé publique via GitHub Secrets
+  public_key = var.SSH_PUBLIC_KEY
 }
 
 # Define security group for EC2
@@ -34,8 +34,8 @@ resource "aws_security_group" "allow_ssh" {
 
 # Create an EC2 instance t2.2xlarge
 resource "aws_instance" "app_server" {
-  ami           = "ami-0c55b159cbfafe1f0"  # Ubuntu AMI (adjust based on your region)
-  instance_type = "t2.2xlarge"             # Instance type
+  ami           = "ami-0c55b159cbfafe1f0" # Ubuntu AMI (adjust based on your region)
+  instance_type = "t2.2xlarge"            # Instance type
   key_name      = aws_key_pair.deployer_key.key_name
 
   # Attach security group for SSH
@@ -46,6 +46,7 @@ resource "aws_instance" "app_server" {
               #!/bin/bash
               echo "export AWS_ACCESS_KEY_ID=${var.AWS_ACCESS_KEY_ID}" >> /etc/environment
               echo "export AWS_SECRET_ACCESS_KEY=${var.AWS_SECRET_ACCESS_KEY}" >> /etc/environment
+              echo "export AWS_SESSION_TOKEN=${var.AWS_SESSION_TOKEN}" >> /etc/environment  # Ajout du token temporaire
               EOF
 
   tags = {
