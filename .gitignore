@@ -1,5 +1,20 @@
-# ignore windows and mac system files
+# Ignore Windows and Mac system files
 .DS_Store
 Thumbs.db
 ehthumbs.db
+
+# Ignore Python virtual environments
 venv/
+__pycache__/
+
+# Ignore Terraform local files and sensitive files
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars  # Ignore .tfvars files that may contain sensitive variables
+
+# Ignore Terraform crash logs
+crash.log
+
+# Ignore log files
+*.log
