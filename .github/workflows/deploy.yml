@@ -23,6 +23,9 @@ jobs:
       run: terraform init
       working-directory: terraform/  # Spécifier le dossier contenant les fichiers .tf
 
+    - name: Check AWS CLI Version
+      run: aws --version
+    
     - name: Test AWS Credentials # Vérifier que les credentials sont corrects
       run: aws sts get-caller-identity
       env:
