@@ -34,8 +34,8 @@ resource "aws_security_group" "allow_ssh" {
 
 # Create an EC2 instance t2.2xlarge
 resource "aws_instance" "app_server" {
-  ami           = "ami-0c55b159cbfafe1f0" # Ubuntu AMI (adjust based on your region)
-  instance_type = "t2.2xlarge"            # Instance type
+  ami           = "ami-04dd23e62ed049936" # Ubuntu AMI (adjust based on your region)
+  instance_type = "t2.large"            # Instance type (adjust based on your needs)
   key_name      = aws_key_pair.deployer_key.key_name
 
   # Attach security group for SSH
