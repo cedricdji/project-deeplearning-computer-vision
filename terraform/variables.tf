@@ -1,11 +1,13 @@
 variable "AWS_ACCESS_KEY_ID" {
   description = "Your AWS access key"
   type        = string
+  default    = "" # Default value, adjust if necessary
 }
 
 variable "AWS_SECRET_ACCESS_KEY" {
   description = "Your AWS secret access key"
   type        = string
+  default     = "" # Default value, adjust if necessary
 }
 
 variable "AWS_REGION" {
@@ -17,9 +19,11 @@ variable "AWS_REGION" {
 variable "SSH_PUBLIC_KEY" {
   description = "For SSH access"
   type        = string
+
 }
 
 variable "AWS_SESSION_TOKEN" {
   description = "AWS Session Token for temporary credentials"
   type        = string
+  default     = "" # Default value, adjust if necessary
 }
