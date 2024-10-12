@@ -32,7 +32,7 @@ resource "aws_security_group" "allow_ssh" {
   }
 }
 
-# Create an EC2 instance t2.2xlarge
+# Create an EC2 instance t2.large
 resource "aws_instance" "app_server" {
   ami           = "ami-04dd23e62ed049936" # Ubuntu AMI (adjust based on your region)
   instance_type = "t2.large"            # Instance type (adjust based on your needs)
@@ -50,7 +50,7 @@ resource "aws_instance" "app_server" {
               EOF
 
   tags = {
-    Name = "EC2-t2.2xlarge-Model"
+    Name = "EC2-t2.large-Model"
   }
 
   # Output the public IP of the instance
