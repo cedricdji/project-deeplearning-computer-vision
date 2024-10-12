@@ -1,8 +1,8 @@
 provider "aws" {
-  region        = var.AWS_REGION
-  access_key    = var.AWS_ACCESS_KEY_ID
-  secret_key    = var.AWS_SECRET_ACCESS_KEY
-  token         = var.AWS_SESSION_TOKEN  # Ajout du token temporaire
+  region     = var.AWS_REGION
+  access_key = var.AWS_ACCESS_KEY_ID
+  secret_key = var.AWS_SECRET_ACCESS_KEY
+  token      = var.AWS_SESSION_TOKEN
 }
 
 # Define the key pair for SSH access
@@ -34,8 +34,8 @@ resource "aws_security_group" "allow_ssh" {
 
 # Create an EC2 instance t2.large
 resource "aws_instance" "app_server" {
-  ami           = "ami-04dd23e62ed049936" # Ubuntu AMI (adjust based on your region)
-  instance_type = "t2.large"            # Instance type (adjust based on your needs)
+  ami           = "ami-0a0e5d9c7acc336f1" # Ubuntu AMI (adjust based on your region)
+  instance_type = "t2.large"              # Instance type
   key_name      = aws_key_pair.deployer_key.key_name
 
   # Attach security group for SSH
@@ -57,4 +57,9 @@ resource "aws_instance" "app_server" {
   provisioner "local-exec" {
     command = "echo ${self.public_ip} > ec2_public_ip.txt"
   }
+}
+
+# Output the public IP address of the EC2 instance
+output "ec2_public_ip" {
+  value = aws_instance.app_server.public_ip
 }
