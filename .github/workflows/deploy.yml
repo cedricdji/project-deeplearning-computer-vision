@@ -3,7 +3,6 @@ name: EC2 Instance Deploy and Model Execution
 on:
   push:
     branches:
-      - main
       - ingeneurie
 
 jobs:
@@ -18,9 +17,9 @@ jobs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
 
-    # - name: Terraform Init
-    #   run: terraform init
-    #   working-directory: terraform/
+    - name: Terraform Init
+      run: terraform init
+      working-directory: terraform/
 
     - name: Terraform Plan
       run: terraform plan
