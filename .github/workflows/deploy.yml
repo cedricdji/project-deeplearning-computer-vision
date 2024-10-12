@@ -79,7 +79,7 @@ jobs:
       run: |
         docker build -t my-deep-learning-model:latest .
 
-    - name: Tag Docker image
+    - name: Tag Docker image a voir
       run: |
         docker tag my-deep-learning-model:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
 
