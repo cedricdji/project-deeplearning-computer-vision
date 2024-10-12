@@ -26,8 +26,6 @@ jobs:
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
 
 
-    - name: Terraform Plan
-      run: terraform plan
 
     - name: Terraform Apply
       id: apply
