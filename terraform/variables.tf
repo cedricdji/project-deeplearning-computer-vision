@@ -19,7 +19,7 @@ variable "AWS_REGION" {
 variable "SSH_PUBLIC_KEY" {
   description = "For SSH access"
   type        = string
-
+  default     = "" # Default value, adjust if necessary
 }
 
 variable "AWS_SESSION_TOKEN" {
