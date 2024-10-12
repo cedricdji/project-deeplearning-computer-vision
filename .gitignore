@@ -12,6 +12,9 @@ __pycache__/
 *.tfstate.backup
 .terraform/
 *.tfvars  # Ignore .tfvars files that may contain sensitive variables
+*.terraform.lock.hcl
+terraform/terraform.tfvars.backup
+terraform/ec2_public_ip.txt
 
 # Ignore Terraform crash logs
 crash.log
