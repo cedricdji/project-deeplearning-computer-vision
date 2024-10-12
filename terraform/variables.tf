@@ -1,13 +1,13 @@
 
-variable "AWS_ACCESS_KEY_ID" {
-  description = "Your AWS access key"
-  type        = string
-}
+# variable "AWS_ACCESS_KEY_ID" {
+#   description = "Your AWS access key"
+#   type        = string
+# }
 
-variable "AWS_SECRET_ACCESS_KEY" {
-  description = "Your AWS secret access key"
-  type        = string
-}
+# variable "AWS_SECRET_ACCESS_KEY" {
+#   description = "Your AWS secret access key"
+#   type        = string
+# }
 
 variable "AWS_REGION" {
   description = "The region in which AWS resources are created"
@@ -20,7 +20,7 @@ variable "SSH_PUBLIC_KEY" {
   type        = string
 }
 
-variable "AWS_SESSION_TOKEN" {
-  description = "AWS Session Token for temporary credentials"
-  type        = string
-}
+# variable "AWS_SESSION_TOKEN" {
+#   description = "AWS Session Token for temporary credentials"
+#   type        = string
+# }
