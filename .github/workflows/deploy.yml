@@ -45,6 +45,7 @@ jobs:
         echo "EC2 Public IP is: $IP"
         echo "::set-output name=EC2_PUBLIC_IP::$IP"
         echo $IP > ec2_ip.txt  # Sauvegarder l'IP dans un fichier pour réutilisation
+        cat ec2_ip.txt  # Afficher le contenu du fichier
       working-directory: terraform/
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
