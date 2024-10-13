@@ -26,9 +26,6 @@ jobs:
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
-    - name: Debug SSH_PUBLIC_KEY
-      run: echo "SSH_PUBLIC_KEY=${{ secrets.SSH_PUBLIC_KEY }}"
-
     - name: Terraform Plan
       run: terraform plan
       working-directory: terraform/
@@ -36,30 +33,24 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
-    - name: Terraform Apply
-      id: apply
-      run: terraform apply -auto-approve
+    - name: Terraform Apply and capture IP
+      run: |
+        terraform apply -auto-approve -json > apply_output.json
+        cat apply_output.json
+        IP=$(jq -r '.outputs.ec2_public_ip.value' apply_output.json)
+        if [[ -z "$IP" ]]; then
+          echo "Failed to retrieve EC2 Public IP"
+          exit 1
+        fi
+        echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_OUTPUT
       working-directory: terraform/
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
-
-    - name: Capture EC2 Public IP from output
-      run: |
-        terraform output -json > ec2_output.json
-        cat ec2_output.json
-        IP=$(jq -r '.ec2_public_ip.value' ec2_output.json)
-        if [[ -z "$IP" ]]; then
-          echo "Failed to retrieve EC2 Public IP"
-          exit 1
-        fi
-        echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
 
   build_and_deploy:
     name: Build and Deploy Docker container
@@ -88,14 +79,4 @@ jobs:
 
     - name: SSH into EC2 and pull Docker image
       run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run my-deep-learning-model"
-
-  follow_logs:
-    name: Follow Model Execution Logs
-    needs: build_and_deploy
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: SSH into EC2 and follow logs
-      run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
+        ssh -o StrictHostKeyChecking=no ec2-user@${{ steps.terraform.outputs.EC2_PUBLIC_IP }} "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run my-deep-learning-model"
