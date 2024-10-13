@@ -58,7 +58,8 @@ jobs:
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
     - name: Debug IP Address
-      run: echo "EC2 Public IP is: ${{ env.EC2_PUBLIC_IP }}"
+      run: |
+        echo "EC2 Public IP is: $EC2_PUBLIC_IP"
 
   build_and_deploy:
     name: Build and Deploy Docker container
@@ -87,7 +88,7 @@ jobs:
 
     - name: SSH into EC2 and pull Docker image
       run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run my-deep-learning-model"
+        ssh -o StrictHostKeyChecking=no ec2-user@$EC2_PUBLIC_IP "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run my-deep-learning-model"
 
   follow_logs:
     name: Follow Model Execution Logs
@@ -97,4 +98,4 @@ jobs:
     steps:
     - name: SSH into EC2 and follow logs
       run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
+        ssh -o StrictHostKeyChecking=no ec2-user@$EC2_PUBLIC_IP "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
