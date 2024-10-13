@@ -28,7 +28,7 @@ jobs:
 
     - name: Debug SSH_PUBLIC_KEY
       run: echo "SSH_PUBLIC_KEY=${{ secrets.SSH_PUBLIC_KEY }}"
-      
+
     - name: Terraform Plan
       run: terraform plan
       working-directory: terraform/
@@ -39,16 +39,9 @@ jobs:
         SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
-    - name: Terraform Apply and capture EC2 Public IP
+    - name: Terraform Apply
       id: apply
-      run: |
-        terraform apply -auto-approve
-        IP=$(terraform output -raw ec2_public_ip 2> /dev/null)
-        if [[ -z "$IP" ]]; then
-          echo "Failed to retrieve EC2 Public IP"
-          exit 1
-        fi
-        echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
+      run: terraform apply -auto-approve
       working-directory: terraform/
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -57,6 +50,22 @@ jobs:
         SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
+    - name: Get EC2 Public IP
+      id: ec2_ip
+      run: |
+        output=$(terraform output -raw ec2_public_ip 2>&1)
+        if [[ "$?" -ne 0 ]]; then
+          echo "Terraform output error: $output"
+          exit 1
+        fi
+    
+        if [[ -z "$output" ]]; then
+          echo "Failed to retrieve EC2 Public IP, no output from Terraform"
+          exit 1
+        fi
+    
+        echo "EC2_PUBLIC_IP=$output" >> $GITHUB_ENV
+      
     - name: Debug IP Address
       run: |
         echo "EC2 Public IP is: $EC2_PUBLIC_IP"
@@ -88,7 +97,7 @@ jobs:
 
     - name: SSH into EC2 and pull Docker image
       run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@$EC2_PUBLIC_IP "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run my-deep-learning-model"
+        ssh -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run my-deep-learning-model"
 
   follow_logs:
     name: Follow Model Execution Logs
@@ -98,4 +107,4 @@ jobs:
     steps:
     - name: SSH into EC2 and follow logs
       run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@$EC2_PUBLIC_IP "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
+        ssh -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
