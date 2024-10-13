@@ -16,6 +16,9 @@ jobs:
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
+    
+    - name: Debug SSH_PUBLIC_KEY
+      run: echo "SSH_PUBLIC_KEY=${{ secrets.SSH_PUBLIC_KEY }}"
 
     - name: Terraform Init
       run: terraform init -input=false
