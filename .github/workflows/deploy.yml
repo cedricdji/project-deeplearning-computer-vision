@@ -50,14 +50,16 @@ jobs:
         SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
-    - name: Capture EC2 Public IP directly from apply output
+    - name: Capture EC2 Public IP from output
       run: |
-        EC2_PUBLIC_IP=$(terraform apply -auto-approve -json | jq -r '.outputs.ec2_public_ip.value')
-        if [[ -z "$EC2_PUBLIC_IP" ]]; then
+        terraform output -json > ec2_output.json
+        cat ec2_output.json
+        IP=$(jq -r '.ec2_public_ip.value' ec2_output.json)
+        if [[ -z "$IP" ]]; then
           echo "Failed to retrieve EC2 Public IP"
           exit 1
         fi
-        echo "EC2_PUBLIC_IP=$EC2_PUBLIC_IP" >> $GITHUB_ENV
+        echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
 
   build_and_deploy:
     name: Build and Deploy Docker container
