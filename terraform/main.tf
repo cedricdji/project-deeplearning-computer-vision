@@ -50,7 +50,7 @@ resource "aws_security_group" "allow_ssh" {
 resource "aws_instance" "app_server" {
   ami           = "ami-0621e09dc8263acc3" # Ubuntu AMI (adjust based on your region)
   instance_type = "t2.large"              # Instance type
-  key_name      = aws_key_pair.deployer_key.key_name
+  key_name      = aws_key_pair.my_new_key_cedric.key_name
 
   # Attach security group for SSH
   vpc_security_group_ids = [aws_security_group.allow_ssh.id]
