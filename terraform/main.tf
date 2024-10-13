@@ -2,7 +2,7 @@ terraform {
   backend "s3" {
     bucket = "backend-terraform-a23dsti-deep-learning-project"
     key    = "ingeneurie/terraform.tfstate"
-    region = var.AWS_REGION
+    region = "us-east-1"
   }
 }
 
