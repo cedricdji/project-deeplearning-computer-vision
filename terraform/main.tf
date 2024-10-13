@@ -1,3 +1,11 @@
+terraform {
+  backend "s3" {
+    bucket = "backend-terraform-a23dsti-deep-learning-project"
+    key    = "ingeneurie/terraform.tfstate"
+    region = var.AWS_REGION
+  }
+}
+
 provider "aws" {
   region     = var.AWS_REGION
   access_key = var.AWS_ACCESS_KEY_ID
@@ -34,7 +42,7 @@ resource "aws_security_group" "allow_ssh" {
 
 # Create an EC2 instance t2.large
 resource "aws_instance" "app_server" {
-  ami           = "ami-0a0e5d9c7acc336f1" # Ubuntu AMI (adjust based on your region)
+  ami           = "ami-0621e09dc8263acc3" # Ubuntu AMI (adjust based on your region)
   instance_type = "t2.large"              # Instance type
   key_name      = aws_key_pair.deployer_key.key_name
 
