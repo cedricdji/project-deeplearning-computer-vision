@@ -3,7 +3,7 @@ name: EC2 Instance Deploy and Model Execution
 on:
   push:
     branches:
-      - ingeneurie
+      - main
 
 jobs:
   terraform:
@@ -38,30 +38,26 @@ jobs:
 
     - name: Terraform Apply
       id: apply
-      run: |
-        terraform apply -auto-approve -json | tee apply_output.json | jq -r 'select(.type == "outputs") | .outputs.ec2_public_ip.value' > ec2_ip.txt
+      run: terraform apply -auto-approve
       working-directory: terraform/
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
-    - name: Debug IP Address
+    - name: Get EC2 Public IP from S3 backend
       run: |
-        if [[ -f ec2_ip.txt ]]; then
-          IP=$(cat ec2_ip.txt)
-          echo "EC2 Public IP is $IP"
-          if [[ -z "$IP" ]]; then
-            echo "Failed to retrieve EC2 Public IP"
-            exit 1
-          fi
-          echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
-        else
-          echo "Failed to find ec2_ip.txt"
+        aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/terraform.tfstate terraform.tfstate
+        cat terraform.tfstate | jq -r '.resources[] | select(.type == "aws_instance") | .instances[0].attributes.public_ip' > ec2_ip.txt
+        IP=$(cat ec2_ip.txt)
+        echo "EC2 Public IP is $IP"
+        if [[ -z "$IP" ]]; then
+          echo "Failed to retrieve EC2 Public IP from terraform.tfstate"
           exit 1
         fi
-      working-directory: terraform/
+        echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
 
   build_and_deploy:
     name: Build and Deploy Docker container
