@@ -44,7 +44,7 @@ jobs:
         IP=$(terraform output -raw ec2_public_ip | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}')
         echo "EC2 Public IP: $IP"
         # Sauvegarder l'IP dans l'environnement GitHub pour la prochaine étape
-        echo "$IP" >> "$GITHUB_ENV"
+        "$IP" >> "$GITHUB_ENV"
       working-directory: terraform/
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
