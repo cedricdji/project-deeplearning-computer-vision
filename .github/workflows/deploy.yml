@@ -43,9 +43,8 @@ jobs:
         # Capture de l'IP publique de l'EC2
         IP=$(terraform output -raw ec2_public_ip)
         echo "EC2 Public IP is: $IP"
-        echo "::set-output name=EC2_PUBLIC_IP::$IP"
-        echo $IP > ec2_ip.txt  # Sauvegarder l'IP dans un fichier pour réutilisation
-        cat ec2_ip.txt  # Afficher le contenu du fichier
+        # Écrire l'IP dans un fichier d'environnement GitHub
+        echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
       working-directory: terraform/
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -53,9 +52,6 @@ jobs:
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
-
-    outputs:
-      EC2_PUBLIC_IP: ${{ steps.apply.outputs.EC2_PUBLIC_IP }}
 
   build_and_deploy:
     name: Build and Deploy Docker container
@@ -104,8 +100,7 @@ jobs:
 
     - name: Debug information
       run: |
-        IP=$(cat ec2_ip.txt)  # Lire l'IP à partir du fichier
-        echo "EC2 Public IP: $IP"
+        echo "EC2 Public IP from environment: $EC2_PUBLIC_IP"
         echo "SSH Private Key (first 20 chars): ${SSH_PRIVATE_KEY:0:20}"
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -118,9 +113,9 @@ jobs:
         # Créer le répertoire .ssh s'il n'existe pas
         mkdir -p ~/.ssh
         # Ajouter l'hôte à known_hosts pour éviter le prompt SSH
-        ssh-keyscan -H $(cat ec2_ip.txt) >> ~/.ssh/known_hosts
+        ssh-keyscan -H $EC2_PUBLIC_IP >> ~/.ssh/known_hosts
         # Exécuter la commande SSH en utilisant l'IP publique récupérée de Terraform
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$(cat ec2_ip.txt) \
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$EC2_PUBLIC_IP \
         "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run -d -p 80:80 my-deep-learning-model"
         # Supprimer la clé privée après utilisation
         rm private_key.pem
@@ -139,7 +134,7 @@ jobs:
         echo "$SSH_PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
         # Suivre les logs de Docker sur l'instance EC2
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$(cat ec2_ip.txt) "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$EC2_PUBLIC_IP "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
         # Supprimer la clé privée après utilisation
         rm private_key.pem
       env:
