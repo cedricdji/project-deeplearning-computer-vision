@@ -85,7 +85,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t my-deep-learning-model:latest .
+        docker build -t my-deep-learning-model:latest -f docker/requirements.txt .
 
     - name: Tag Docker image
       run: |
