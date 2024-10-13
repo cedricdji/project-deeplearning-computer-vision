@@ -14,8 +14,8 @@ provider "aws" {
 }
 
 # Define the key pair for SSH access
-resource "aws_key_pair" "deployer_key" {
-  key_name   = "deployer_key"
+resource "aws_key_pair" "my_new_key_cedric" {
+  key_name   = "my_new_key_cedric"
   public_key = var.SSH_PUBLIC_KEY
 }
 
