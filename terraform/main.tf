@@ -49,7 +49,7 @@ resource "aws_security_group" "allow_ssh" {
 # Create an EC2 instance t2.large
 resource "aws_instance" "app_server" {
   ami           = "ami-0325498274077fac5" # Ubuntu Server 24.04 LTS (HVM), SSD Volume Type
-  instance_type = "t2.large"              # Instance type
+  instance_type = "g3s.xlarge"              # Instance type
   key_name      = aws_key_pair.my_new_key_cedric.key_name
 
   # Attach security group for SSH
