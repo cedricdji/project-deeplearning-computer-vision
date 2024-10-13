@@ -88,6 +88,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: SSH into EC2 and follow logs
+    - name: SSH into EC2 and follow logss
       run: |
         ssh -o StrictHostKeyChecking=no ec2-user@$EC2_PUBLIC_IP "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
