@@ -39,11 +39,7 @@ jobs:
     - name: Terraform Apply
       id: apply
       run: |
-        terraform apply -auto-approve -json > apply_output.json
-        if [[ ! -f apply_output.json ]]; then
-          echo "apply_output.json not found!"
-          exit 1
-        fi
+        terraform apply -auto-approve -json | tee apply_output.json | jq -r 'select(.type == "outputs") | .outputs.ec2_public_ip.value' > ec2_ip.txt
       working-directory: terraform/
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -53,25 +49,16 @@ jobs:
 
     - name: Debug IP Address
       run: |
-        if [[ -f apply_output.json ]]; then
-          echo "Verifying the content of apply_output.json:"
-          cat apply_output.json
-
-          # Vérifier si le fichier JSON contient bien les outputs
-          if jq -e '.outputs.ec2_public_ip.value' apply_output.json > /dev/null 2>&1; then
-            IP=$(jq -r '.outputs.ec2_public_ip.value' apply_output.json)
-            echo "EC2 Public IP is $IP"
-            if [[ -z "$IP" ]]; then
-              echo "Failed to retrieve EC2 Public IP"
-              exit 1
-            fi
-            echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
-          else
-            echo "Failed to parse apply_output.json with jq"
+        if [[ -f ec2_ip.txt ]]; then
+          IP=$(cat ec2_ip.txt)
+          echo "EC2 Public IP is $IP"
+          if [[ -z "$IP" ]]; then
+            echo "Failed to retrieve EC2 Public IP"
             exit 1
           fi
+          echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
         else
-          echo "Failed to find apply_output.json"
+          echo "Failed to find ec2_ip.txt"
           exit 1
         fi
       working-directory: terraform/
