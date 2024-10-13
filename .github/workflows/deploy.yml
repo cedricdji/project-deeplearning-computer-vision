@@ -43,7 +43,11 @@ jobs:
       id: apply
       run: |
         terraform apply -auto-approve
-        IP=$(terraform output -raw ec2_public_ip)
+        IP=$(terraform output -raw ec2_public_ip 2> /dev/null)
+        if [[ -z "$IP" ]]; then
+          echo "Failed to retrieve EC2 Public IP"
+          exit 1
+        fi
         echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
       working-directory: terraform/
       env:
@@ -52,6 +56,9 @@ jobs:
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    - name: Debug IP Address
+      run: echo "EC2 Public IP is: ${{ env.EC2_PUBLIC_IP }}"
 
   build_and_deploy:
     name: Build and Deploy Docker container
@@ -80,7 +87,7 @@ jobs:
 
     - name: SSH into EC2 and pull Docker image
       run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@$EC2_PUBLIC_IP "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run my-deep-learning-model"
+        ssh -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run my-deep-learning-model"
 
   follow_logs:
     name: Follow Model Execution Logs
@@ -88,6 +95,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: SSH into EC2 and follow logss
+    - name: SSH into EC2 and follow logs
       run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@$EC2_PUBLIC_IP "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
+        ssh -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
