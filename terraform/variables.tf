@@ -27,3 +27,9 @@ variable "AWS_SESSION_TOKEN" {
   type        = string
   default     = "" # Default value, adjust if necessary
 }
+
+variable "AWS_ACCOUNT_ID" {
+  description = "Your AWS account ID"
+  type        = string
+  default     = "" # Default value, adjust if necessary
+}
