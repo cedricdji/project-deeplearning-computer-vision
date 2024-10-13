@@ -38,13 +38,13 @@ jobs:
     - name: Terraform Apply and capture IP
       run: |
         terraform apply -auto-approve -json > apply_output.json
-        cat apply_output.json
-        IP=$(jq -r '.outputs.ec2_public_ip.value' apply_output.json)
+        cat apply_output.json | jq -r '.outputs.ec2_public_ip.value' > ec2_ip.txt
+        IP=$(cat ec2_ip.txt)
         if [[ -z "$IP" ]]; then
           echo "Failed to retrieve EC2 Public IP"
           exit 1
         fi
-        echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_OUTPUT
+        echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
       working-directory: terraform/
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -79,4 +79,4 @@ jobs:
 
     - name: SSH into EC2 and pull Docker image
       run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@${{ steps.terraform.outputs.EC2_PUBLIC_IP }} "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run my-deep-learning-model"
+        ssh -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run my-deep-learning-model"
