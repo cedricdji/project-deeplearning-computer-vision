@@ -105,13 +105,14 @@ jobs:
         # Créer un fichier temporaire pour la clé privée
         echo "$SSH_PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
-        # Exécuter la commande SSH en utilisant la clé privée
+        # Exécuter la commande SSH en utilisant l'IP publique récupérée de Terraform
         ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@${{ needs.terraform.outputs.EC2_PUBLIC_IP }} \
         "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run -d -p 80:80 my-deep-learning-model"
         # Supprimer la clé privée après utilisation
         rm private_key.pem
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+    
 
   follow_logs:
     name: Follow Model Execution Logs
