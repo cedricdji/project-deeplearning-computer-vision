@@ -3,7 +3,7 @@ name: EC2 Instance Deploy and Model Execution
 on:
   push:
     branches:
-      - main
+      - ineneurie
 
 jobs:
   terraform:
