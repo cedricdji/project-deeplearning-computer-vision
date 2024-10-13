@@ -3,7 +3,7 @@ name: EC2 Instance Deploy and Model Execution
 on:
   push:
     branches:
-      - ingeneurie
+      - ineneurie
 
 jobs:
   terraform:
@@ -47,17 +47,11 @@ jobs:
         SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
-    - name: Get EC2 Public IP from S3 backend
+    - name: Capture EC2 Public IP using terraform output
       run: |
-        aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/terraform.tfstate terraform.tfstate
-        cat terraform.tfstate | jq -r '.resources[] | select(.type == "aws_instance") | .instances[0].attributes.public_ip' > ec2_ip.txt
-        IP=$(cat ec2_ip.txt)
-        echo "EC2 Public IP is $IP"
-        if [[ -z "$IP" ]]; then
-          echo "Failed to retrieve EC2 Public IP from terraform.tfstate"
-          exit 1
-        fi
+        IP=$(terraform output -raw ec2_public_ip)
         echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
+        echo "EC2 Public IP is: $IP"
 
   build_and_deploy:
     name: Build and Deploy Docker container
@@ -94,6 +88,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: SSH into EC2 and follow logss
+    - name: SSH into EC2 and follow logs
       run: |
         ssh -o StrictHostKeyChecking=no ec2-user@${{ env.EC2_PUBLIC_IP }} "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
