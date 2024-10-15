@@ -40,11 +40,11 @@ jobs:
       id: apply
       run: |
         terraform apply -auto-approve
-        # Capturer l'IP publique de l'instance EC2 et éviter d'inclure les métadonnées de débogage
+        # Capturer l'IP publique de l'instance EC2
         IP=$(terraform output -raw ec2_public_ip | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}')
         echo "EC2 Public IP: $IP"
         
-        # Enregistrer l'IP dans un fichier temporaire
+        # Enregistrer l'IP dans un fichier temporaire en remplaçant l'ancienne IP
         echo "$IP" > ec2_ip.txt
         
         # Copier le fichier dans le bucket S3
