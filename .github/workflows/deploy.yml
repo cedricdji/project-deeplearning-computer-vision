@@ -34,7 +34,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
-        
+
     - name: Terraform Apply and Capture EC2 IP
       id: apply
       run: |
@@ -43,11 +43,11 @@ jobs:
         # Supprimer l'ancien fichier d'IP s'il existe pour éviter les doublons
         rm -f ec2_ip.txt
         
-        # Capturer l'IP publique de l'instance EC2 à partir de la sortie de Terraform
-        IP=$(terraform output -raw ec2_public_ip)
+        # Capturer l'IP publique de l'instance EC2 à partir de Terraform en évitant les informations de débogage
+        IP=$(terraform output -raw ec2_public_ip | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}')
         echo "EC2 Public IP: $IP"
         
-        # Enregistrer l'IP dans un fichier temporaire
+        # Enregistrer uniquement l'IP dans un fichier temporaire sans doublons
         echo "$IP" > ec2_ip.txt
         
         # Copier le fichier dans le bucket S3
