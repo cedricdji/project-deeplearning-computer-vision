@@ -44,13 +44,11 @@ jobs:
         IP=$(terraform output -raw ec2_public_ip)
         echo "EC2 Public IP: $IP"
         
-        # Utilisation d'un délimiteur aléatoire pour gérer les chaînes multilignes
-        EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+        # Enregistrer l'IP dans un fichier temporaire
+        echo "$IP" > ec2_ip.txt
         
-        # Sauvegarder l'IP dans un fichier d'environnement GitHub avec le délimiteur
-        echo "EC2_PUBLIC_IP<<$EOF" >> "$GITHUB_ENV"
-        echo "$IP" >> "$GITHUB_ENV"
-        echo "$EOF" >> "$GITHUB_ENV"
+        # Copier le fichier dans le bucket S3
+        aws s3 cp ec2_ip.txt s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt
       working-directory: terraform/
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -115,14 +113,21 @@ jobs:
         # Créer un fichier temporaire pour la clé privée
         echo "$SSH_PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
-        # Récupérer l'IP publique depuis l'environnement GitHub
-        IP=$EC2_PUBLIC_IP
+
+        # Télécharger le fichier contenant l'IP depuis S3
+        aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
+        
+        # Lire l'IP depuis le fichier
+        IP=$(cat ec2_ip.txt)
         echo "EC2 IP: $IP"
+        
         # Ajouter l'hôte à known_hosts pour éviter l'avertissement SSH
         ssh-keyscan -H $IP >> ~/.ssh/known_hosts
+        
         # SSH dans l'instance EC2 et exécuter les commandes Docker
         ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP \
         "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run -d -p 80:80 my-deep-learning-model"
+        
         # Supprimer la clé privée après utilisation
         rm private_key.pem
       env:
@@ -139,12 +144,18 @@ jobs:
         # Créer un fichier temporaire pour la clé privée
         echo "$SSH_PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
-        # Récupérer l'IP publique depuis l'environnement GitHub
-        IP=$EC2_PUBLIC_IP
+
+        # Télécharger le fichier contenant l'IP depuis S3
+        aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
+        
+        # Lire l'IP depuis le fichier
+        IP=$(cat ec2_ip.txt)
         echo "EC2 IP: $IP"
+
         # Suivre les logs Docker sur l'EC2
         ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP \
         "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
+        
         # Supprimer la clé privée après utilisation
         rm private_key.pem
       env:
