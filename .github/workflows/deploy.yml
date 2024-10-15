@@ -3,7 +3,7 @@ name: EC2 Instance Deploy and Model Execution
 on:
   push:
     branches:
-      - ingeneurie
+      - ingeneurie  # Change cette branche selon ta configuration
 
 jobs:
   terraform:
@@ -26,27 +26,32 @@ jobs:
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
+    - name: Terraform Plan
+      run: terraform plan
+      working-directory: terraform/
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+
     - name: Terraform Apply and Capture EC2 IP
       id: apply
       run: |
         terraform apply -auto-approve
-
         # Récupérer l'ID de l'instance EC2
         INSTANCE_ID=$(terraform show -json | jq -r '.values.root_module.resources[] | select(.type == "aws_instance") | .values.id')
         echo "Instance ID: $INSTANCE_ID"
-
-        # Utiliser AWS CLI pour obtenir l'adresse IP publique de l'instance EC2
+        
+        # Utiliser AWS CLI pour obtenir l'adresse IP publique
         IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
         echo "EC2 Public IP: $IP"
-
-        # Vérifier si l'adresse IP est vide
-        if [[ -z "$IP" ]]; then
-          echo "Erreur: L'adresse IP n'a pas pu être récupérée."
-          exit 1
-        fi
-
-        # Sauvegarder l'IP dans un fichier et la télécharger sur S3
+        
+        # Enregistrer l'IP dans un fichier temporaire
         echo "$IP" > ec2_ip.txt
+        
+        # Copier le fichier dans le bucket S3
         aws s3 cp ec2_ip.txt s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt
       working-directory: terraform/
       env:
@@ -55,3 +60,107 @@ jobs:
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
+
+  build_and_deploy:
+    name: Build and Deploy Docker container
+    needs: terraform
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v2
+
+    - name: Log in to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    - name: Check if Docker image has changed
+      id: check-image
+      run: |
+        export AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}"
+        export AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+        export AWS_SESSION_TOKEN="${{ secrets.AWS_SESSION_TOKEN }}"
+
+        IMAGE_DIGEST=$(aws ecr describe-images --repository-name my-deep-learning-model --region ${{ secrets.AWS_REGION }} --query 'imageDetails[0].imageDigest' --output text)
+        echo "Current image digest: $IMAGE_DIGEST"
+        if [ -f .docker_digest ]; then
+          LAST_DIGEST=$(cat .docker_digest)
+          if [ "$IMAGE_DIGEST" == "$LAST_DIGEST" ]; then
+            echo "Docker image has not changed, skipping build and push."
+            echo "IMAGE_CHANGED=false" >> $GITHUB_ENV
+            exit 0
+          fi
+        fi
+        echo "IMAGE_CHANGED=true" >> $GITHUB_ENV
+
+    - name: Build and Push Docker image (if changed)
+      if: env.IMAGE_CHANGED == 'true'
+      run: |
+        docker build -t my-deep-learning-model:latest -f docker/Dockerfile .
+        docker tag my-deep-learning-model:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
+        # Sauvegarder le digest de l'image Docker
+        aws ecr describe-images --repository-name my-deep-learning-model --region ${{ secrets.AWS_REGION }} --query 'imageDetails[0].imageDigest' --output text > .docker_digest
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    - name: SSH into EC2 and pull Docker image
+      run: |
+        # Créer un fichier temporaire pour la clé privée
+        echo "$SSH_PRIVATE_KEY" > private_key.pem
+        chmod 600 private_key.pem
+
+        # Télécharger le fichier contenant l'IP depuis S3
+        aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
+        
+        # Lire l'IP depuis le fichier
+        IP=$(cat ec2_ip.txt)
+        echo "EC2 IP: $IP"
+        
+        # Ajouter l'hôte à known_hosts pour éviter l'avertissement SSH
+        ssh-keyscan -H $IP >> ~/.ssh/known_hosts
+        
+        # SSH dans l'instance EC2 et exécuter les commandes Docker
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP \
+        "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run -d -p 80:80 my-deep-learning-model"
+        
+        # Supprimer la clé privée après utilisation
+        rm private_key.pem
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+  follow_logs:
+    name: Follow Model Execution Logs
+    needs: build_and_deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: SSH into EC2 and follow logs
+      run: |
+        # Créer un fichier temporaire pour la clé privée
+        echo "$SSH_PRIVATE_KEY" > private_key.pem
+        chmod 600 private_key.pem
+
+        # Télécharger le fichier contenant l'IP depuis S3
+        aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
+        
+        # Lire l'IP depuis le fichier
+        IP=$(cat ec2_ip.txt)
+        echo "EC2 IP: $IP"
+
+        # Suivre les logs Docker sur l'EC2
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP \
+        "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
+        
+        # Supprimer la clé privée après utilisation
+        rm private_key.pem
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
