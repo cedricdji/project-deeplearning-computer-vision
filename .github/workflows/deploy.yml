@@ -34,7 +34,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
-        
+
     - name: Terraform Apply and Capture EC2 IP
       id: apply
       run: |
@@ -43,11 +43,11 @@ jobs:
         # Supprimer l'ancien fichier d'IP s'il existe pour éviter les doublons
         rm -f ec2_ip.txt
         
-        # Récupérer l'ID de l'instance EC2
-        INSTANCE_ID=$(terraform show -json | jq -r '.values.root_module.resources[] | select(.type == "aws_instance") | .values.id')
-        echo "Instance ID: $INSTANCE_ID"
+        # Récupérer l'ID de l'instance EC2 directement à partir du plan terraform
+        INSTANCE_ID=$(terraform show -json | grep -Eo 'i-[a-f0-9]{17}')
+        echo "EC2 Instance ID: $INSTANCE_ID"
         
-        # Utiliser AWS CLI pour obtenir l'adresse IP publique
+        # Utiliser AWS CLI pour obtenir l'adresse IP publique de l'instance
         IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
         echo "EC2 Public IP: $IP"
         
