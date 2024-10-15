@@ -122,6 +122,7 @@ jobs:
         echo "EC2 IP: $IP"
         
         # Ajouter l'hôte à known_hosts pour éviter l'avertissement SSH
+        mkdir -p ~/.ssh  # S'assurer que le répertoire existe
         ssh-keyscan -H $IP >> ~/.ssh/known_hosts
         
         # SSH dans l'instance EC2 et exécuter les commandes Docker
