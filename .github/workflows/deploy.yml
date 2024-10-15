@@ -49,7 +49,13 @@ jobs:
         IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
         echo "EC2 Public IP: $IP"
         
-        # Enregistrer l'IP dans un fichier temporaire en remplaçant l'ancienne IP
+        # Vérifier que l'adresse IP est correcte et non vide
+        if [[ -z "$IP" ]]; then
+          echo "Erreur: l'IP de l'instance EC2 n'a pas été récupérée correctement."
+          exit 1
+        fi
+        
+        # Enregistrer l'IP dans un fichier temporaire
         echo "$IP" > ec2_ip.txt
         
         # Copier le fichier dans le bucket S3
@@ -61,6 +67,7 @@ jobs:
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
+  
 
   build_and_deploy:
     name: Build and Deploy Docker container
