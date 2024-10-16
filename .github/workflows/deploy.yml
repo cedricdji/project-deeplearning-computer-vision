@@ -52,6 +52,10 @@ jobs:
     - name: Extract EC2 IP from state
       run: |
         IP=$(jq -r '.resources[] | select(.type=="aws_instance") | .instances[0].attributes.public_ip' terraform.tfstate)
+        if [ -z "$IP" ]; then
+          echo "L'adresse IP de l'instance EC2 est vide, échec de la récupération de l'IP."
+          exit 1
+        fi
         echo "EC2 Public IP: $IP"
         echo "$IP" > ec2_ip.txt
         aws s3 cp ec2_ip.txt s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt
@@ -92,11 +96,6 @@ jobs:
           fi
         fi
         echo "IMAGE_CHANGED=true" >> $GITHUB_ENV
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
 
     - name: Build and Push Docker image (if changed)
       if: env.IMAGE_CHANGED == 'true'
@@ -118,6 +117,12 @@ jobs:
         aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
         IP=$(cat ec2_ip.txt)
         echo "EC2 IP: $IP"
+        
+        if [ -z "$IP" ]; then
+          echo "L'adresse IP de l'instance EC2 est vide, échec de la connexion SSH."
+          exit 1
+        fi
+
         ssh-keyscan -H $IP >> ~/.ssh/known_hosts
         ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP \
         "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run -d -p 80:80 my-deep-learning-model"
@@ -138,6 +143,12 @@ jobs:
         aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
         IP=$(cat ec2_ip.txt)
         echo "EC2 IP: $IP"
+
+        if [ -z "$IP" ]; then
+          echo "L'adresse IP de l'instance EC2 est vide, échec de la récupération des logs."
+          exit 1
+        fi
+
         ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP \
         "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
         rm private_key.pem
