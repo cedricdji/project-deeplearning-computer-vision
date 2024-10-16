@@ -1,0 +1,12 @@
+h5py==3.11.0
+keras==3.5.0
+matplotlib==3.8.4
+numpy==1.26.4
+opencv-python==4.10.0.84
+pandas==2.2.2
+pillow==10.4.0
+scikit-learn==1.5.1
+scipy==1.13.1
+seaborn==0.13.2
+tensorflow==2.17.0
+boto3==1.28.0
