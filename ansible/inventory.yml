@@ -1,0 +1,7 @@
+# inventaire des machines
+all:
+  hosts:
+    ec2-instance:
+      ansible_host: "{{ lookup('file', 'ec2_ip.txt') }}"
+      ansible_user: ec2-user
+      ansible_ssh_private_key_file: "{{ lookup('env', 'SSH_PRIVATE_KEY_PATH') }}"
