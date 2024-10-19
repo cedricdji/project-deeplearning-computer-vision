@@ -73,7 +73,7 @@ jobs:
     - name: Install Docker on EC2 via Ansible
       run: |
         echo "$SSH_PRIVATE_KEY" > private_key.pem
-        chmod 600 private_key.pem
+        chmod 755 private_key.pem
         ansible-playbook -i inventory.yml playbooks/main.yml
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
