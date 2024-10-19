@@ -101,7 +101,7 @@ jobs:
         echo "$SSH_PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
         echo "EC2_PUBLIC_IP is $EC2_PUBLIC_IP"
-        ansible-playbook -i inventory.yml playbooks/main.yml -vvvv
+        ansible-playbook -i inventory.yml playbooks/main.yml
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
@@ -167,7 +167,10 @@ jobs:
         "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run -d -p 80:80 my-deep-learning-model"
         rm private_key.pem
       env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
 
   follow_logs:
     name: Follow Model Execution Logs
