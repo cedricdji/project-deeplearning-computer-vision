@@ -1,35 +1,32 @@
-# Purpose: Install Docker on the target machine
+# roles/docker/tasks/main.yml
 ---
-- name: Install required packages
-  apt:
-    name: 
-      - apt-transport-https
-      - ca-certificates
-      - curl
-      - software-properties-common
+- name: Install required packages on Amazon Linux
+  ansible.builtin.yum:
+    name:
+      - yum-utils
+      - device-mapper-persistent-data
+      - lvm2
     state: present
-  when: ansible_facts['os_family'] == "Debian"
+  when: ansible_facts['os_family'] == "RedHat" or ansible_facts['distribution'] == "Amazon"
 
-- name: Add Docker GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
+- name: Add Docker repository on Amazon Linux
+  ansible.builtin.yum_repository:
+    name: docker
+    description: Docker Repository
+    baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
+    gpgcheck: yes
+    gpgkey: https://download.docker.com/linux/centos/gpg
+    enabled: yes
+  when: ansible_facts['os_family'] == "RedHat" or ansible_facts['distribution'] == "Amazon"
+
+- name: Install Docker on Amazon Linux
+  ansible.builtin.yum:
+    name: docker
     state: present
-  when: ansible_facts['os_family'] == "Debian"
-
-- name: Add Docker repository
-  apt_repository:
-    repo: deb https://download.docker.com/linux/ubuntu focal stable
-  when: ansible_facts['os_family'] == "Debian"
-
-- name: Install Docker
-  apt:
-    name: docker-ce
-    state: present
-    update_cache: yes
-  when: ansible_facts['os_family'] == "Debian"
+  when: ansible_facts['os_family'] == "RedHat" or ansible_facts['distribution'] == "Amazon"
 
 - name: Start Docker service
-  service:
+  ansible.builtin.systemd:
     name: docker
     state: started
-    enabled: yes
+    enabled: true
