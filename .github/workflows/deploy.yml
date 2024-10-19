@@ -73,6 +73,9 @@ jobs:
     - name: Install Ansible
       run: sudo apt-get update && sudo apt-get install -y ansible
 
+    - name: Download EC2 IP from S3
+      run: aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
+
     - name: Install Docker on EC2 via Ansible
       working-directory: ansible
       run: |

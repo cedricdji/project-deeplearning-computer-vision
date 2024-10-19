@@ -1,7 +1,7 @@
 # install docker on ec2 instance using ansible
 ---
 - name: Install Docker on EC2 instance
-  hosts: ec2
+  hosts: ec2-instance
   become: true
   roles:
     - docker
