@@ -172,7 +172,7 @@ jobs:
         
         # Connexion et exécution des commandes Docker
         ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP \
-          "docker pull ***.dkr.ecr.***.amazonaws.com/my-deep-learning-model:latest && docker run -d -p 80:80 my-deep-learning-model"
+          "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run -d -p 80:80 my-deep-learning-model"
         
         # Nettoyage du fichier clé
         rm private_key.pem
@@ -191,13 +191,29 @@ jobs:
     steps:
     - name: SSH into EC2 and follow logs
       run: |
+        # Supprimer tout fichier de clé privé existant et créer une nouvelle clé
+        rm -f private_key.pem
         echo "$SSH_PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
+        
+        # Télécharger l'adresse IP de l'EC2 depuis S3
         aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
         IP=$(cat ec2_ip.txt)
         echo "EC2 IP: $IP"
+        
+        # Préparer l'accès SSH
+        mkdir -p ~/.ssh
+        ssh-keyscan -H $IP >> ~/.ssh/known_hosts
+        
+        # Connexion à l'instance EC2 et suivi des logs Docker
         ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP \
         "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
+        
+        # Nettoyage du fichier clé
         rm private_key.pem
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
