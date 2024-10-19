@@ -58,7 +58,6 @@ jobs:
     - name: Check EC2_PUBLIC_IP
       run: echo "EC2_PUBLIC_IP is $EC2_PUBLIC_IP"
 
-
   ansible_install_docker:
     name: Install Docker on EC2 using Ansible
     needs: fetch_ip_from_state
@@ -157,22 +156,33 @@ jobs:
 
     - name: SSH into EC2 and pull Docker image
       run: |
+        # Supprimer tout fichier de clé privé existant et créer une nouvelle clé
+        rm -f private_key.pem
         echo "$SSH_PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
+        
+        # Télécharger l'adresse IP de l'EC2 depuis S3
         aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
         IP=$(cat ec2_ip.txt)
         echo "EC2 IP: $IP"
+        
+        # Préparer l'accès SSH
         mkdir -p ~/.ssh  # Crée le répertoire si nécessaire
         ssh-keyscan -H $IP >> ~/.ssh/known_hosts
+        
+        # Connexion et exécution des commandes Docker
         ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP \
           "docker pull ***.dkr.ecr.***.amazonaws.com/my-deep-learning-model:latest && docker run -d -p 80:80 my-deep-learning-model"
+        
+        # Nettoyage du fichier clé
         rm private_key.pem
       env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
-
+      
   follow_logs:
     name: Follow Model Execution Logs
     needs: build_and_deploy
