@@ -86,6 +86,7 @@ jobs:
       run: |
         echo "$SSH_PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
+        echo "EC2_PUBLIC_IP is $EC2_PUBLIC_IP"
         ansible-playbook -i inventory.yml playbooks/main.yml -vvvv
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
