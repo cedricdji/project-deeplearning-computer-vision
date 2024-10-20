@@ -33,7 +33,3 @@
 
 - name: Ajouter l'utilisateur ec2-user au groupe Docker
   ansible.builtin.command: sudo usermod -aG docker ec2-user
-
-- name: Recharger le groupe Docker pour l'utilisateur ec2-user
-  become: true
-  command: newgrp docker
