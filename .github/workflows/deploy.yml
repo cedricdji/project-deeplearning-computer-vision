@@ -201,21 +201,41 @@ jobs:
 
     - name: SSH into EC2 and load Docker image
       run: |
+        # Supprimer tout fichier de clé privé existant et créer une nouvelle clé
+        rm -f private_key.pem
+        echo "$SSH_PRIVATE_KEY" > private_key.pem
+        chmod 600 private_key.pem
+    
+        # Télécharger l'adresse IP de l'EC2 depuis S3
+        aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
+        IP=$(cat ec2_ip.txt)
+        echo "EC2 IP: $IP"
+    
+        # Vérification si l'IP est bien définie
+        if [ -z "$IP" ]; then
+          echo "EC2 IP is not defined, exiting."
+          exit 1
+        fi
+    
+        # Préparer l'accès SSH
+        mkdir -p ~/.ssh  # Crée le répertoire si nécessaire
+        ssh-keyscan -H $IP >> ~/.ssh/known_hosts
+    
         # Connexion et chargement de l'image Docker sur EC2
         ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP << EOF
           docker load -i /home/ec2-user/my-dl-model.tar
           sudo docker run -d -p 80:80 ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
         EOF
-
+    
         # Nettoyage du fichier clé
         rm private_key.pem
-
+    
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-
+      
   follow_logs:
     name: Follow Model Execution Logs
     needs: build_and_deploy
