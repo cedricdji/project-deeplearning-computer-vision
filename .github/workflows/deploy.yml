@@ -242,33 +242,26 @@ jobs:
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      
-  follow_logs:
-    name: Follow Model Execution Logs
-    needs: build_and_deploy
-    runs-on: ubuntu-latest
 
-    steps:
-    - name: SSH into EC2 and follow logs
+    - name: SSH into EC2 and check all containers
       run: |
         # Supprimer tout fichier de clé privé existant et créer une nouvelle clé
         rm -f private_key.pem
         echo "$SSH_PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
-        
+    
         # Télécharger l'adresse IP de l'EC2 depuis S3
         aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
         IP=$(cat ec2_ip.txt)
         echo "EC2 IP: $IP"
-        
+    
         # Préparer l'accès SSH
         mkdir -p ~/.ssh
         ssh-keyscan -H $IP >> ~/.ssh/known_hosts
-        
-        # Connexion à l'instance EC2 et suivi des logs Docker
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP \
-        "docker logs -f $(docker ps -q --filter ancestor=my-deep-learning-model:latest)"
-        
+    
+        # Vérifier tous les conteneurs, y compris ceux arrêtés
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP "docker ps -a"
+    
         # Nettoyage du fichier clé
         rm private_key.pem
       env:
@@ -277,3 +270,65 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
+      
+    - name: SSH into EC2 and show logs for the stopped container
+      run: |
+          # Connexion à l'instance EC2 et afficher les logs du dernier conteneur arrêté
+          CONTAINER_ID=$(ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP "docker ps -a -q --filter ancestor=my-deep-learning-model:latest --filter status=exited | head -n 1")
+          if [ -n "$CONTAINER_ID" ]; then
+            echo "Conteneur arrêté trouvé. Affichage des logs :"
+            ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP "docker logs $CONTAINER_ID"
+          else
+            echo "Aucun conteneur arrêté trouvé."
+          fi
+      
+          # Nettoyage du fichier clé
+          rm private_key.pem
+      env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+          
+  follow_logs:
+    name: Follow Model Execution Logs
+    needs: build_and_deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: SSH into EC2 and follow Docker logs
+      run: |
+        # Supprimer tout fichier de clé privé existant et créer une nouvelle clé
+        rm -f private_key.pem
+        echo "$SSH_PRIVATE_KEY" > private_key.pem
+        chmod 600 private_key.pem
+    
+        # Télécharger l'adresse IP de l'EC2 depuis S3
+        aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
+        IP=$(cat ec2_ip.txt)
+        echo "EC2 IP: $IP"
+    
+        # Préparer l'accès SSH
+        mkdir -p ~/.ssh
+        ssh-keyscan -H $IP >> ~/.ssh/known_hosts
+    
+        # Connexion à l'instance EC2 et suivi des logs du conteneur si en cours d'exécution
+        CONTAINER_ID=$(ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP "docker ps -q --filter ancestor=my-deep-learning-model:latest")
+        if [ -n "$CONTAINER_ID" ]; then
+          echo "Conteneur en cours d'exécution trouvé. Affichage des logs :"
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP "docker logs -f $CONTAINER_ID"
+        else
+          echo "Aucun conteneur en cours d'exécution trouvé."
+        fi
+    
+        # Nettoyage du fichier clé
+        rm private_key.pem
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+    
