@@ -180,11 +180,18 @@ jobs:
         
         # Connexion et exécution des commandes Docker avec authentification ECR
         ssh -vvv -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP << EOF
-          sudo systemctl status docker
-          sudo $(aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com)
-          sudo docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
-          sudo docker run -d -p 80:80 ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
+        sudo systemctl status docker
+
+        # Authentification au registre ECR
+        aws ecr get-login-password --region ${AWS_REGION} | sudo docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
+        # Télécharger l'image Docker depuis ECR
+        sudo docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/my-deep-learning-model:latest
+
+        # Exécuter le conteneur Docker
+        sudo docker run -d -p 80:80 ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/my-deep-learning-model:latest
         EOF
+
         # Nettoyage du fichier clé
         rm private_key.pem
       env:
