@@ -222,19 +222,20 @@ jobs:
         ssh-keyscan -H $IP >> ~/.ssh/known_hosts
     
         # Connexion et chargement de l'image Docker sur EC2
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP << EOF
+        ssh -vvv -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP << EOF
           docker load -i /home/ec2-user/my-dl-model.tar
           sudo docker run -d -p 80:80 ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
         EOF
     
         # Nettoyage du fichier clé
         rm private_key.pem
-    
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       
   follow_logs:
     name: Follow Model Execution Logs
