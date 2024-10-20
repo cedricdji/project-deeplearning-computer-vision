@@ -130,14 +130,18 @@ jobs:
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
+    # Étape pour vérifier si l'image a changé
     - name: Check if Docker image has changed
       id: check-image
       run: |
+        # Obtenir l'ID de l'image actuelle dans le registre
         IMAGE_DIGEST=$(aws ecr describe-images --repository-name my-deep-learning-model --region ${{ secrets.AWS_REGION }} --query 'imageDetails[0].imageDigest' --output text)
+
+        # Vérifier si nous avons déjà enregistré le digest de l'image précédente
         if [ -f .docker_digest ]; then
           LAST_DIGEST=$(cat .docker_digest)
           if [ "$IMAGE_DIGEST" == "$LAST_DIGEST" ]; then
-            echo "Docker image has not changed, skipping build and push."
+            echo "L'image Docker n'a pas changé, skip le build et le push."
             echo "IMAGE_CHANGED=false" >> $GITHUB_ENV
             exit 0
           fi
@@ -155,6 +159,8 @@ jobs:
         docker build -t my-deep-learning-model:latest -f docker/Dockerfile .
         docker tag my-deep-learning-model:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
+
+        # Enregistrer le nouveau digest de l'image poussée
         aws ecr describe-images --repository-name my-deep-learning-model --region ${{ secrets.AWS_REGION }} --query 'imageDetails[0].imageDigest' --output text > .docker_digest
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
