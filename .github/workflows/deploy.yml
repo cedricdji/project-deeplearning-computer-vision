@@ -162,7 +162,13 @@ jobs:
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
-    - name: SSH into EC2 and pull Docker image
+    - name: Save Docker image as tarball
+      if: env.IMAGE_CHANGED == 'true'
+      run: |
+        docker save -o my-dl-model.tar ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
+        echo "Docker image saved as tarball."
+      
+    - name: Copy Docker tarball to EC2
       run: |
         # Supprimer tout fichier de clé privé existant et créer une nouvelle clé
         rm -f private_key.pem
@@ -178,23 +184,16 @@ jobs:
         mkdir -p ~/.ssh  # Crée le répertoire si nécessaire
         ssh-keyscan -H $IP >> ~/.ssh/known_hosts
 
-        # Connexion et exécution des commandes Docker avec authentification ECR
-        ssh -vvv -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP << EOF
-          sudo systemctl status docker
+        # Transférer le fichier Docker tarball à l'instance EC2
+        scp -i private_key.pem my-dl-model.tar ec2-user@$IP:/home/ec2-user/
+        echo "Docker tarball copied to EC2."
 
-          # Configurer les identifiants AWS pour l'authentification ECR
-          export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
-          export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
-          export AWS_SESSION_TOKEN="${AWS_SESSION_TOKEN}"
-
-          # Authentification au registre ECR
-          aws ecr get-login-password --region ${AWS_REGION} | sudo docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-
-          # Télécharger l'image Docker depuis ECR
-          sudo docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/my-deep-learning-model:latest
-
-          # Exécuter le conteneur Docker
-          sudo docker run -d -p 80:80 ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/my-deep-learning-model:latest
+    - name: SSH into EC2 and load Docker image
+      run: |
+        # Connexion et chargement de l'image Docker sur EC2
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP << EOF
+          docker load -i /home/ec2-user/my-dl-model.tar
+          sudo docker run -d -p 80:80 ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
         EOF
 
         # Nettoyage du fichier clé
@@ -202,9 +201,7 @@ jobs:
 
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
   follow_logs:
