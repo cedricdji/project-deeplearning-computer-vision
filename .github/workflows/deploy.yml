@@ -171,8 +171,8 @@ jobs:
         ssh-keyscan -H $IP >> ~/.ssh/known_hosts
         
         # Connexion et exécution des commandes Docker
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP \
-          "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && docker run -d -p 80:80 my-deep-learning-model"
+        ssh -vvv -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP \
+          "sudo systemctl status docker && sudo docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && sudo docker run -d -p 80:80 my-deep-learning-model"
         
         # Nettoyage du fichier clé
         rm private_key.pem
