@@ -273,6 +273,26 @@ jobs:
       
     - name: SSH into EC2 and show logs for the stopped container
       run: |
+          # Supprimer tout fichier de clé privé existant et créer une nouvelle clé
+          rm -f private_key.pem
+          echo "$SSH_PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+      
+          # Télécharger l'adresse IP de l'EC2 depuis S3
+          aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
+          IP=$(cat ec2_ip.txt)
+          echo "EC2 IP: $IP"
+      
+          # Vérification si l'IP est bien définie
+          if [ -z "$IP" ]; then
+            echo "EC2 IP is not defined, exiting."
+            exit 1
+          fi
+      
+          # Préparer l'accès SSH
+          mkdir -p ~/.ssh
+          ssh-keyscan -H $IP >> ~/.ssh/known_hosts
+      
           # Connexion à l'instance EC2 et afficher les logs du dernier conteneur arrêté
           CONTAINER_ID=$(ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP "docker ps -a -q --filter ancestor=my-deep-learning-model:latest --filter status=exited | head -n 1")
           if [ -n "$CONTAINER_ID" ]; then
@@ -290,6 +310,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+      
 
           
   follow_logs:
