@@ -55,6 +55,12 @@ resource "aws_instance" "app_server" {
   # Attach security group for SSH
   vpc_security_group_ids = [aws_security_group.allow_ssh.id]
 
+    # Increase the root volume size to 50GB
+  root_block_device {
+    volume_size = 50  # Taille du volume en Go
+    volume_type = "gp3"  # Type de volume
+  }
+
   # Pass AWS credentials to the EC2 instance via userdata
   user_data = <<-EOF
               #!/bin/bash

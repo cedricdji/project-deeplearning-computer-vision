@@ -104,7 +104,7 @@ jobs:
         echo "$SSH_PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
         echo "EC2_PUBLIC_IP is $EC2_PUBLIC_IP"
-        ansible-playbook -i inventory.yml playbooks/main.yml -vvv
+        ansible-playbook -i inventory.yml playbooks/main.yml
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -178,10 +178,13 @@ jobs:
         mkdir -p ~/.ssh  # Crée le répertoire si nécessaire
         ssh-keyscan -H $IP >> ~/.ssh/known_hosts
         
-        # Connexion et exécution des commandes Docker
-        ssh -vvv -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP \
-          "sudo systemctl status docker && sudo docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest && sudo docker run -d -p 80:80 my-deep-learning-model"
-        
+        # Connexion et exécution des commandes Docker avec authentification ECR
+        ssh -vvv -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP << EOF
+          sudo systemctl status docker
+          sudo $(aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com)
+          sudo docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
+          sudo docker run -d -p 80:80 ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
+        EOF
         # Nettoyage du fichier clé
         rm private_key.pem
       env:
