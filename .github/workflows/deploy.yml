@@ -35,32 +35,41 @@ jobs:
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
-  fetch_ip_from_state:
-    name: Fetch EC2 IP from Terraform State
-    needs: terraform
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Download terraform.tfstate from S3
-      run: aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/terraform.tfstate terraform.tfstate
+    - name: Extract EC2 IP and update S3
+      run: |
+        IP=$(jq -r '.resources[] | select(.type=="aws_instance") | .instances[0].attributes.public_ip' terraform/terraform.tfstate)
+        echo "EC2 Public IP: $IP"
+        echo "$IP" > ec2_ip.txt
+        aws s3 cp ec2_ip.txt s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
-    - name: Extract EC2 IP from state and set environment variable
+  fetch_ip_from_s3:
+    name: Fetch EC2 IP from S3
+    needs: terraform
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download EC2 IP from S3
+      run: aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    - name: Set EC2_PUBLIC_IP environment variable
       run: |
-        IP=$(jq -r '.resources[] | select(.type=="aws_instance") | .instances[0].attributes.public_ip' terraform.tfstate)
+        IP=$(cat ec2_ip.txt)
         echo "EC2 Public IP: $IP"
         echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
 
-    - name: Check EC2_PUBLIC_IP
-      run: echo "EC2_PUBLIC_IP is $EC2_PUBLIC_IP"
-
   ansible_install_docker:
     name: Install Docker on EC2 using Ansible
-    needs: fetch_ip_from_state
+    needs: fetch_ip_from_s3
     runs-on: ubuntu-latest
 
     steps:
@@ -69,30 +78,6 @@ jobs:
 
     - name: Install Ansible
       run: sudo apt-get update && sudo apt-get install -y ansible
-
-    - name: Download EC2 IP from S3
-      run: |
-        aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
-        cat ec2_ip.txt  # pour vérifier que le fichier a été téléchargé
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-
-    - name: Download terraform.tfstate from S3
-      run: aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/terraform.tfstate terraform.tfstate
-      env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-  
-    - name: Extract EC2 IP from state and set environment variable
-      run: |
-          IP=$(jq -r '.resources[] | select(.type=="aws_instance") | .instances[0].attributes.public_ip' terraform.tfstate)
-          echo "EC2 Public IP: $IP"
-          echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
 
     - name: Install Docker on EC2 via Ansible
       working-directory: ansible
