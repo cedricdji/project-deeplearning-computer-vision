@@ -1,10 +1,8 @@
 absl-py==2.1.0
 alembic==1.13.3
 annotated-types==0.7.0
-#ansible==10.5.0
-ansible==6.6.0
-# ansible-core==2.17.5
-ansible-core==2.12.0
+ansible==10.5.0
+ansible-core==2.17.5
 asttokens==2.4.1
 astunparse==1.6.3
 attrs==23.2.0
