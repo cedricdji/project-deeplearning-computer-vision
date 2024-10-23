@@ -24,3 +24,7 @@ crash.log
 *.log
 # local files
 files/
+
+# Ignore Archives
+*.zip
+/Archives/
