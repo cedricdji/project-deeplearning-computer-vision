@@ -28,4 +28,4 @@ RUN jupyter nbconvert --to notebook --execute --inplace model.ipynb
 
 # Commande par défaut (facultatif si tu veux exécuter autre chose après)
 #CMD ["python", "models/train_model.py"]
-CMD ["python", "model.ipynb"]
+CMD ["python", "model.py"]
