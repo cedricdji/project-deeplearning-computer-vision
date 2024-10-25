@@ -15,7 +15,10 @@ variable "role_name" {
   type        = string
   default     = "LabRole"
 }
-
+variable "role_arn" {
+  description = "L'ARN du rôle IAM pour SageMaker"
+  type        = string
+}
 variable "bucket_names" {
   type    = list(string)
   default = [
