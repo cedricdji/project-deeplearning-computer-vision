@@ -11,6 +11,7 @@ terraform {
     }
   }
 }
+
 provider "aws" {
   region = var.aws_region
 }
@@ -20,7 +21,29 @@ resource "aws_s3_bucket" "project_buckets" {
   for_each       = toset(var.bucket_names)
   bucket         = each.value
   acl            = "private"
-  force_destroy  = true  # Autorise la suppression des objets si besoin
+  force_destroy  = true
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes = [bucket]
+  }
+}
+
+# Politique IAM pour autoriser iam:PassRole
+resource "aws_iam_role_policy" "pass_role_policy" {
+  name   = "PassRolePolicy"
+  role   = var.role_arn  # Utilisez le rôle défini dans les secrets pour SageMaker
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = "iam:PassRole",
+        Resource = var.role_arn  # Autorise l'utilisation du rôle pour SageMaker
+      }
+    ]
+  })
 }
 
 # Configuration du cycle de vie du notebook avec encodage en base64
