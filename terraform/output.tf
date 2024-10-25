@@ -1,12 +1,9 @@
-
-output "ec2_public_ip" {
-  value = aws_instance.app_server.public_ip
+output "notebook_instance_arn" {
+  description = "ARN de l'instance SageMaker Notebook"
+  value       = aws_sagemaker_notebook_instance.notebook.arn
 }
 
-output "ec2_public_dns" {
-  value = aws_instance.app_server.public_dns
-}
-
-output "ec2_instance_id" {
-  value = aws_instance.app_server.id
+output "bucket_names" {
+  description = "Noms des buckets S3 créés"
+  value       = [for bucket in aws_s3_bucket.project_buckets : bucket.bucket]
 }

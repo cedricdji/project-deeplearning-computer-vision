@@ -11,75 +11,69 @@ terraform {
     }
   }
 }
-
 provider "aws" {
-  region     = var.AWS_REGION
-  access_key = var.AWS_ACCESS_KEY_ID
-  secret_key = var.AWS_SECRET_ACCESS_KEY
-  token      = var.AWS_SESSION_TOKEN
+  region = var.aws_region
 }
 
-# Define the key pair for SSH access
-resource "aws_key_pair" "my_new_key_cedric" {
-  key_name   = "my_new_key_cedric"
-  public_key = var.SSH_PUBLIC_KEY
+variable "aws_region" {
+  default = "us-east-1"  # Remplace par ta région
 }
 
-# Define security group for EC2
-resource "aws_security_group" "allow_ssh" {
-  name        = "allow_ssh"
-  description = "Allow SSH inbound traffic"
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+variable "notebook_instance_name" {
+  default = "deep-learning-notebook-instance"
 }
 
-# Create an EC2 instance t2.large
-resource "aws_instance" "app_server" {
-  ami           = "ami-0fff1b9a61dec8a5f" # Ubuntu Server 24.04 LTS (HVM), SSD Volume Type
-  instance_type = "t3.large"              # Instance type
-  key_name      = aws_key_pair.my_new_key_cedric.key_name
+variable "role_arn" {
+  description = "Le rôle IAM pour SageMaker Notebook"
+  type        = string
+}
 
-  # Attach security group for SSH
-  vpc_security_group_ids = [aws_security_group.allow_ssh.id]
+variable "bucket_names" {
+  type    = list(string)
+  default = [
+    "dsti-a23-deep-learning-outputs",
+    "backend-terraform-a23dsti-deep-learning-project",
+    "images-projet-deep-learning"
+  ]
+}
 
-    # Increase the root volume size to 50GB
-  root_block_device {
-    volume_size = 50  # Taille du volume en Go
-    volume_type = "gp3"  # Type de volume
-  }
+# Création des buckets S3 s'ils n'existent pas
+resource "aws_s3_bucket" "project_buckets" {
+  for_each = toset(var.bucket_names)
+  bucket   = each.value
+  acl      = "private"
+}
 
-  # Pass AWS credentials to the EC2 instance via userdata
-  user_data = <<-EOF
-              #!/bin/bash
-              echo "export AWS_ACCESS_KEY_ID=${var.AWS_ACCESS_KEY_ID}" >> /etc/environment
-              echo "export AWS_SECRET_ACCESS_KEY=${var.AWS_SECRET_ACCESS_KEY}" >> /etc/environment
-              echo "export AWS_SESSION_TOKEN=${var.AWS_SESSION_TOKEN}" >> /etc/environment  # Ajout du token temporaire
-              EOF
+# Configuration du cycle de vie du notebook
+resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "notebook_lifecycle_config" {
+  name = "DownloadModelFiles"
+
+  on_start = <<EOF
+#!/bin/bash
+# Téléchargement du fichier Model.ipynb et requirements.txt dans le répertoire SageMaker
+
+# Chemin de destination
+cd /home/ec2-user/SageMaker
+
+# Téléchargement depuis S3
+aws s3 cp s3://images-projet-deep-learning/Model.ipynb .
+aws s3 cp s3://images-projet-deep-learning/requirements.txt .
+
+echo "Fichiers Model.ipynb et requirements.txt téléchargés dans le répertoire SageMaker"
+EOF
+}
+
+# Création de l'instance Notebook SageMaker
+resource "aws_sagemaker_notebook_instance" "notebook" {
+  name                   = var.notebook_instance_name
+  instance_type          = "ml.t2.medium"
+  role_arn               = var.role_arn
+  direct_internet_access = "Enabled"
+  root_access            = "Enabled"
+  volume_size            = 10
+  lifecycle_config_name  = aws_sagemaker_notebook_instance_lifecycle_configuration.notebook_lifecycle_config.name
 
   tags = {
-    Name = "EC2-t2.large-Model"
-  }
-
-  # Output the public IP of the instance
-  provisioner "local-exec" {
-    command = "echo ${self.public_ip} > ec2_public_ip.txt"
+    Name = "DeepLearningNotebook"
   }
 }
-
-# Output the public IP address of the EC2 instance
-# output "ec2_public_ip" {
-#   value = aws_instance.app_server.public_ip
-# }

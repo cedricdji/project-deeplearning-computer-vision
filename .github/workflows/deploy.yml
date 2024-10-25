@@ -1,4 +1,4 @@
-name: SageMaker Notebook Deployment with Terraform Setup
+name: SageMaker Notebook Deployment with Terraform
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   setup_infrastructure:
-    name: Setup S3 Buckets with Terraform
+    name: Setup S3 Buckets and SageMaker Notebook with Terraform
     runs-on: ubuntu-latest
 
     steps:
@@ -60,8 +60,8 @@ jobs:
 
     # Exécute Terraform pour créer les ressources spécifiées dans le fichier `main.tf`, en utilisant `-auto-approve` pour ignorer la confirmation manuelle.
 
-  deploy_sagemaker:
-    name: Deploy and Execute SageMaker Notebook
+  deploy_model_files:
+    name: Upload Model and Requirements to S3
     runs-on: ubuntu-latest
     needs: setup_infrastructure
 
@@ -82,78 +82,26 @@ jobs:
 
     - name: Copy Model and Requirements to S3
       run: |
-        aws s3 cp model.ipynb s3://images-projet-deep-learning/Model.ipynb
-        aws s3 cp requirements.txt s3://images-projet-deep-learning/requirements.txt
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-
+        aws s3 cp ./Model.ipynb s3://images-projet-deep-learning/Model.ipynb
+        aws s3 cp ./requirements.txt s3://images-projet-deep-learning/requirements.txt
     # Copie le modèle (`Model.ipynb`) et `requirements.txt` dans le bucket S3 `images-projet-deep-learning`.
 
-    - name: Install boto3
-      run: |
-       pip install boto3
-  # Cette étape installe boto3 dans l'environnement d'exécution de GitHub Actions.
-  
-    - name: Launch SageMaker Notebook
-      run: |
-        python - <<EOF
-        import boto3
-    
-        client = boto3.client('sagemaker')
-        notebook_instance_name = "deep-learning-notebook-instance"
-    
-        # Création du Notebook SageMaker avec le rôle défini dans AWS_ROLE
-        client.create_notebook_instance(
-            NotebookInstanceName=notebook_instance_name,
-            InstanceType='ml.t2.medium',
-            RoleArn='arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE }}',
-            DirectInternetAccess='Enabled',
-            RootAccess='Enabled',
-            VolumeSizeInGB=10,
-        )
-    
-        # Attendre que le notebook soit prêt
-        waiter = client.get_waiter('notebook_instance_in_service')
-        waiter.wait(NotebookInstanceName=notebook_instance_name)
-    
-        # Exécuter le notebook
-        client.start_notebook_instance(NotebookInstanceName=notebook_instance_name)
-        EOF
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+  monitor_notebook:
+    name: Monitor SageMaker Notebook Execution
+    runs-on: ubuntu-latest
+    needs: setup_infrastructure
 
-    # Lance une instance SageMaker Notebook en utilisant le rôle IAM spécifié dans `AWS_ROLE`, et attend qu'elle soit prête pour exécuter le modèle.
+    steps:
+    - name: Setup AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+        aws-session-token : ${{ secrets.AWS_SESSION_TOKEN }}
+    # Configure les identifiants AWS pour l'accès à CloudWatch Logs pour suivre les logs du notebook.
 
-    - name: Download Model and Requirements in SageMaker Notebook
-      run: |
-        import boto3
-        import os
-
-        s3 = boto3.client('s3')
-        local_path = '/home/ec2-user/SageMaker'
-
-        if not os.path.exists(local_path):
-            os.makedirs(local_path)
-
-        s3.download_file('images-projet-deep-learning', 'Model.ipynb', os.path.join(local_path, 'Model.ipynb'))
-        s3.download_file('images-projet-deep-learning', 'requirements.txt', os.path.join(local_path, 'requirements.txt'))
-
-        print("Modèle et fichier requirements.txt téléchargés avec succès dans le répertoire du notebook.")
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-
-    # Télécharge le modèle et `requirements.txt` dans le répertoire de travail du notebook SageMaker, pour qu’ils soient disponibles localement lors de l'exécution.
-
-    - name: Monitor SageMaker Notebook Execution
+    - name: Monitor Notebook Logs
       run: |
         python - <<EOF
         import boto3
@@ -188,12 +136,3 @@ jobs:
             time.sleep(10)
         EOF
     # Surveille les logs CloudWatch du notebook pour suivre l'exécution du modèle en temps réel.
-
-    - name: Stop and Clean Up SageMaker Notebook
-      run: |
-        client = boto3.client('sagemaker')
-        notebook_instance_name = "deep-learning-notebook-instance"
-        
-        client.stop_notebook_instance(NotebookInstanceName=notebook_instance_name)
-        client.delete_notebook_instance(NotebookInstanceName=notebook_instance_name)
-    # Arrête et supprime l’instance de notebook SageMaker pour libérer les ressources après l'exécution du modèle.

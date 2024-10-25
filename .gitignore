@@ -31,3 +31,4 @@ files/
 
 # old files
 .github/workflows/deploy-old.yml
+/old/
