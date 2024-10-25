@@ -42,10 +42,10 @@ After completing the installation, the code will be functional after the followi
 #### hdf5_write.ipynb (optional):
 9. At top of code, declare the filepaths and filenames.
 
-## System requirements (minimum)
-Operating system: Windows, macOS, Linux
-GPU: not required, but much preferred (see Tensorflow for supported GPUs)
-CPU: 4-core, modern
+## System requirements (minimum)<br>
+Operating system: Windows, macOS, Linux<br>
+GPU: not required, but much preferred (see Tensorflow for supported GPUs)<br>
+CPU: 4-core, modern<br>
 RAM: 8GB (16GB allows for accelerated processing)
 
 ## Server instances
