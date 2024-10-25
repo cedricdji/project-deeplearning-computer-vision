@@ -16,7 +16,7 @@ jobs:
     # Récupère le code du dépôt GitHub pour l'exécution du workflow.
 
     - name: Setup AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v2
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -80,7 +80,7 @@ jobs:
     # Récupère le code du dépôt GitHub pour l'exécution du workflow.
 
     - name: Setup AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v2
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -124,7 +124,7 @@ jobs:
         import time
 
         logs_client = boto3.client('logs')
-        notebook_instance_name = "deep-learning-notebook-instance"
+        notebook_instance_name = "deep-learning-notebook-instance-1"
         log_group_name = f'/aws/sagemaker/NotebookInstances/{notebook_instance_name}'
 
         print(f"Suivi des logs pour {notebook_instance_name}...")
