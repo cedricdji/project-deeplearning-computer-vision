@@ -21,6 +21,8 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+
     # Configure les identifiants AWS pour que les actions GitHub puissent interagir avec les services AWS.
 
     - name: Ensure S3 Buckets Exist
@@ -37,6 +39,8 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+
     # Vérifie l'existence de chaque bucket et les crée si nécessaire.
 
     - name: Setup Terraform
@@ -50,6 +54,8 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+
     # Initialise Terraform avec le backend S3. Ce backend enregistre l'état Terraform dans le bucket `backend-terraform-a23dsti-deep-learning-project`.
 
     - name: Terraform Apply
@@ -59,6 +65,8 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+
     # Exécute Terraform pour créer les ressources spécifiées dans le fichier `main.tf`, en utilisant `-auto-approve` pour ignorer la confirmation manuelle.
 
   deploy_model_files:
@@ -77,12 +85,20 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+
     # Configure les identifiants AWS pour que les actions GitHub puissent interagir avec les services AWS.
 
     - name: Copy Model and Requirements to S3
       run: |
         aws s3 cp ./model.ipynb s3://images-projet-deep-learning/model.ipynb
         aws s3 cp ./requirements.txt s3://images-projet-deep-learning/requirements.txt
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+
     # Copie le modèle (`model.ipynb`) et `requirements.txt` dans le bucket S3 `images-projet-deep-learning`.
 
   monitor_notebook:
@@ -97,6 +113,8 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+
     # Configure les identifiants AWS pour l'accès à CloudWatch Logs pour suivre les logs du notebook.
 
     - name: Monitor Notebook Logs
@@ -133,4 +151,10 @@ jobs:
 
             time.sleep(10)
         EOF
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        
     # Surveille les logs CloudWatch du notebook pour suivre l'exécution du modèle en temps réel.
