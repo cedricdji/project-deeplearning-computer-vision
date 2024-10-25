@@ -69,7 +69,7 @@ EOF
 resource "aws_sagemaker_notebook_instance" "notebook" {
   name                   = var.notebook_instance_name
   instance_type          = "ml.t2.medium"
-  role_arn               = var.role_name
+  role_arn               = var.role_arn
   direct_internet_access = "Enabled"
   root_access            = "Enabled"
   volume_size            = 10
