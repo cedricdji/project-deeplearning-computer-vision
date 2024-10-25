@@ -50,7 +50,7 @@ jobs:
     # Initialise Terraform avec le backend S3. Ce backend enregistre l'état Terraform dans le bucket `backend-terraform-a23dsti-deep-learning-project`.
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve
+      run: terraform apply -auto-approve -var="role_arn=arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE_NAME }}"
       working-directory: terraform/
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
