@@ -16,9 +16,8 @@ variable "role_arn" {
 }
 
 variable "bucket_names" {
-  description = "Liste des noms de buckets S3 à créer pour le projet"
-  type        = list(string)
-  default     = [
+  type    = list(string)
+  default = [
     "dsti-a23-deep-learning-outputs",
     "backend-terraform-a23dsti-deep-learning-project",
     "images-projet-deep-learning"

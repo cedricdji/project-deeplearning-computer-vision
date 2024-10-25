@@ -16,23 +16,28 @@ jobs:
     # Récupère le code du dépôt GitHub pour l'exécution du workflow.
 
     - name: Setup AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v2
+      uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
-        aws-session-token : ${{ secrets.AWS_SESSION_TOKEN }}
     # Configure les identifiants AWS pour que les actions GitHub puissent interagir avec les services AWS.
 
-    - name: Ensure Backend Bucket Exists
+    - name: Ensure S3 Buckets Exist
       run: |
-        if ! aws s3 ls "s3://backend-terraform-a23dsti-deep-learning-project" > /dev/null 2>&1; then
-          aws s3 mb s3://backend-terraform-a23dsti-deep-learning-project --region ${{ secrets.AWS_REGION }}
-          echo "Backend bucket créé."
-        else
-          echo "Backend bucket déjà existant."
-        fi
-    # Vérifie l'existence du bucket backend pour Terraform. Si le bucket n'existe pas, il est créé avant d’initialiser Terraform.
+        for bucket in dsti-a23-deep-learning-outputs backend-terraform-a23dsti-deep-learning-project images-projet-deep-learning; do
+          if aws s3 ls "s3://$bucket" 2>&1 | grep -q 'NoSuchBucket'; then
+            echo "Bucket $bucket does not exist. Creating bucket."
+            aws s3 mb s3://$bucket --region ${{ secrets.AWS_REGION }}
+          else
+            echo "Bucket $bucket already exists."
+          fi
+        done
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+    # Vérifie l'existence de chaque bucket et les crée si nécessaire.
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
@@ -45,8 +50,6 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-
     # Initialise Terraform avec le backend S3. Ce backend enregistre l'état Terraform dans le bucket `backend-terraform-a23dsti-deep-learning-project`.
 
     - name: Terraform Apply
@@ -56,8 +59,6 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-
     # Exécute Terraform pour créer les ressources spécifiées dans le fichier `main.tf`, en utilisant `-auto-approve` pour ignorer la confirmation manuelle.
 
   deploy_model_files:
@@ -76,15 +77,13 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
-        aws-session-token : ${{ secrets.AWS_SESSION_TOKEN }}
-
     # Configure les identifiants AWS pour que les actions GitHub puissent interagir avec les services AWS.
 
     - name: Copy Model and Requirements to S3
       run: |
-        aws s3 cp ./Model.ipynb s3://images-projet-deep-learning/Model.ipynb
+        aws s3 cp ./model.ipynb s3://images-projet-deep-learning/model.ipynb
         aws s3 cp ./requirements.txt s3://images-projet-deep-learning/requirements.txt
-    # Copie le modèle (`Model.ipynb`) et `requirements.txt` dans le bucket S3 `images-projet-deep-learning`.
+    # Copie le modèle (`model.ipynb`) et `requirements.txt` dans le bucket S3 `images-projet-deep-learning`.
 
   monitor_notebook:
     name: Monitor SageMaker Notebook Execution
@@ -98,7 +97,6 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
-        aws-session-token : ${{ secrets.AWS_SESSION_TOKEN }}
     # Configure les identifiants AWS pour l'accès à CloudWatch Logs pour suivre les logs du notebook.
 
     - name: Monitor Notebook Logs

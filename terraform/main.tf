@@ -17,28 +17,29 @@ provider "aws" {
 
 # Création des buckets S3 s'ils n'existent pas
 resource "aws_s3_bucket" "project_buckets" {
-  for_each = toset(var.bucket_names)
-  bucket   = each.value
-  acl = "private"
+  for_each       = toset(var.bucket_names)
+  bucket         = each.value
+  acl            = "private"
+  force_destroy  = true  # Autorise la suppression des objets si besoin
 }
 
-# Configuration du cycle de vie du notebook
+# Configuration du cycle de vie du notebook avec encodage en base64
 resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "notebook_lifecycle_config" {
   name = "DownloadModelFiles"
 
-  on_start = <<EOF
+  on_start = base64encode(<<EOF
 #!/bin/bash
-# Téléchargement du fichier Model.ipynb et requirements.txt dans le répertoire SageMaker
+# Téléchargement du fichier model.ipynb et requirements.txt dans le répertoire SageMaker
 
-# Chemin de destination
 cd /home/ec2-user/SageMaker
 
 # Téléchargement depuis S3
-aws s3 cp s3://images-projet-deep-learning/Model.ipynb .
+aws s3 cp s3://images-projet-deep-learning/model.ipynb .
 aws s3 cp s3://images-projet-deep-learning/requirements.txt .
 
-echo "Fichiers Model.ipynb et requirements.txt téléchargés dans le répertoire SageMaker"
+echo "Fichiers model.ipynb et requirements.txt téléchargés dans le répertoire SageMaker"
 EOF
+  )
 }
 
 # Création de l'instance Notebook SageMaker
