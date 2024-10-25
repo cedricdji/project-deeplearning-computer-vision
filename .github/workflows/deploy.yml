@@ -92,32 +92,36 @@ jobs:
 
     # Copie le modèle (`Model.ipynb`) et `requirements.txt` dans le bucket S3 `images-projet-deep-learning`.
 
+    - name: Install boto3
+      run: |
+       pip install boto3
+  # Cette étape installe boto3 dans l'environnement d'exécution de GitHub Actions.
+  
     - name: Launch SageMaker Notebook
       run: |
         python - <<EOF
         import boto3
-
+    
         client = boto3.client('sagemaker')
         notebook_instance_name = "deep-learning-notebook-instance"
-
+    
         # Création du Notebook SageMaker avec le rôle défini dans AWS_ROLE
         client.create_notebook_instance(
-        NotebookInstanceName=notebook_instance_name,
-        InstanceType='ml.t2.medium',
-        RoleArn='arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE }}',
-        DirectInternetAccess='Enabled',
-        RootAccess='Enabled',
-        VolumeSizeInGB=10,
+            NotebookInstanceName=notebook_instance_name,
+            InstanceType='ml.t2.medium',
+            RoleArn='arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE }}',
+            DirectInternetAccess='Enabled',
+            RootAccess='Enabled',
+            VolumeSizeInGB=10,
         )
-
+    
         # Attendre que le notebook soit prêt
         waiter = client.get_waiter('notebook_instance_in_service')
         waiter.wait(NotebookInstanceName=notebook_instance_name)
-
+    
         # Exécuter le notebook
         client.start_notebook_instance(NotebookInstanceName=notebook_instance_name)
         EOF
-
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
