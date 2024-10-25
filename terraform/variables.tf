@@ -5,7 +5,7 @@ variable "aws_region" {
 }
 
 variable "notebook_instance_name" {
-  description = "Nom de l'instance SageMaker Notebook"
+  description = "Nom de l'instance SageMaker-Notebook"
   type        = string
   default     = "deep-learning-notebook-instance-01"
 }
