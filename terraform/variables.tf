@@ -13,6 +13,7 @@ variable "notebook_instance_name" {
 variable "role_name" {
   description = "Nom du rôle IAM pour SageMaker"
   type        = string
+  default     = "LabRole"
 }
 
 variable "bucket_names" {
