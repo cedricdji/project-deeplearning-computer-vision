@@ -32,7 +32,7 @@ resource "aws_s3_bucket" "project_buckets" {
 # Politique IAM pour autoriser iam:PassRole
 resource "aws_iam_role_policy" "pass_role_policy" {
   name   = "PassRolePolicy"
-  role   = var.role_arn  # Utilisez le rôle défini dans les secrets pour SageMaker
+  role   = var.role_name  # Utilisez le rôle défini dans les secrets pour SageMaker
 
   policy = jsonencode({
     Version = "2012-10-17",
@@ -40,7 +40,7 @@ resource "aws_iam_role_policy" "pass_role_policy" {
       {
         Effect   = "Allow",
         Action   = "iam:PassRole",
-        Resource = var.role_arn  # Autorise l'utilisation du rôle pour SageMaker
+        Resource = var.role_name  # Autorise l'utilisation du rôle pour SageMaker
       }
     ]
   })
@@ -69,7 +69,7 @@ EOF
 resource "aws_sagemaker_notebook_instance" "notebook" {
   name                   = var.notebook_instance_name
   instance_type          = "ml.t2.medium"
-  role_arn               = var.role_arn
+  role_arn               = var.role_name
   direct_internet_access = "Enabled"
   root_access            = "Enabled"
   volume_size            = 10

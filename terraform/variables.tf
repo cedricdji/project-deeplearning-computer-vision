@@ -10,8 +10,8 @@ variable "notebook_instance_name" {
   default     = "deep-learning-notebook-instance"
 }
 
-variable "role_arn" {
-  description = "ARN du rôle IAM pour l'instance SageMaker Notebook"
+variable "role_name" {
+  description = "Nom du rôle IAM pour SageMaker"
   type        = string
 }
 
