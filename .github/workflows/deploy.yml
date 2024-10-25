@@ -117,11 +117,15 @@ jobs:
 
     # Configure les identifiants AWS pour l'accès à CloudWatch Logs pour suivre les logs du notebook.
 
+    - name: Install boto3
+      run: pip install boto3
+
+      
     - name: Monitor Notebook Logs
       run: |
         python - <<EOF
         import boto3
-        import time
+        import time55
 
         logs_client = boto3.client('logs')
         notebook_instance_name = "deep-learning-notebook-instance-1"
