@@ -48,22 +48,34 @@ provider "aws" {
 
 # Configuration du cycle de vie du notebook avec encodage en base64
 resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "notebook_lifecycle_config" {
-  name = "DownloadModelFiles"
+  name = "DownloadAndRunModel"
 
   on_start = base64encode(<<EOF
 #!/bin/bash
-# Téléchargement du fichier model.ipynb et requirements.txt dans le répertoire SageMaker
+# Script de démarrage de l'instance SageMaker
 
 cd /home/ec2-user/SageMaker
 
-# Téléchargement depuis S3
+# Télécharger model.ipynb et requirements.txt depuis S3
 aws s3 cp s3://images-projet-deep-learning/model.ipynb .
 aws s3 cp s3://images-projet-deep-learning/requirements.txt .
 
-echo "Fichiers model.ipynb et requirements.txt téléchargés dans le répertoire SageMaker"
+# Installer les dépendances depuis requirements.txt
+if [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt
+fi
+
+# Installer papermill pour l'exécution automatique du notebook
+pip install papermill
+
+# Exécuter model.ipynb avec papermill et sauvegarder la sortie dans output.ipynb
+papermill model.ipynb output.ipynb
+
+echo "Exécution du modèle terminée."
 EOF
   )
 }
+
 
 # Création de l'instance Notebook SageMaker
 resource "aws_sagemaker_notebook_instance" "notebook" {
