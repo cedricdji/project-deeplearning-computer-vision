@@ -15,33 +15,11 @@ provider "aws" {
   region = var.aws_region
 }
 
-variable "aws_region" {
-  default = "us-east-1"  # Remplace par ta région
-}
-
-variable "notebook_instance_name" {
-  default = "deep-learning-notebook-instance"
-}
-
-variable "role_arn" {
-  description = "Le rôle IAM pour SageMaker Notebook"
-  type        = string
-}
-
-variable "bucket_names" {
-  type    = list(string)
-  default = [
-    "dsti-a23-deep-learning-outputs",
-    "backend-terraform-a23dsti-deep-learning-project",
-    "images-projet-deep-learning"
-  ]
-}
-
 # Création des buckets S3 s'ils n'existent pas
 resource "aws_s3_bucket" "project_buckets" {
   for_each = toset(var.bucket_names)
   bucket   = each.value
-  acl      = "private"
+  acl = "private"
 }
 
 # Configuration du cycle de vie du notebook
