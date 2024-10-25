@@ -28,3 +28,6 @@ files/
 # Ignore Archives
 *.zip
 /Archives/
+
+# old files
+.github/workflows/deploy-old.yml

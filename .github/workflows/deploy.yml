@@ -1,4 +1,4 @@
-name: EC2 Instance Deploy and Model Execution
+name: SageMaker Notebook Deployment with Terraform Setup
 
 on:
   push:
@@ -6,25 +6,48 @@ on:
       - ingeneurie
 
 jobs:
-  terraform:
-    name: Deploy EC2 instance using Terraform
+  setup_infrastructure:
+    name: Setup S3 Buckets with Terraform
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout the code
       uses: actions/checkout@v3
+    # Récupère le code du dépôt GitHub pour l'exécution du workflow.
+
+    - name: Setup AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+        aws-session-token : ${{ secrets.AWS_SESSION_TOKEN }}
+    # Configure les identifiants AWS pour que les actions GitHub puissent interagir avec les services AWS.
+
+    - name: Ensure Backend Bucket Exists
+      run: |
+        if ! aws s3 ls "s3://backend-terraform-a23dsti-deep-learning-project" > /dev/null 2>&1; then
+          aws s3 mb s3://backend-terraform-a23dsti-deep-learning-project --region ${{ secrets.AWS_REGION }}
+          echo "Backend bucket créé."
+        else
+          echo "Backend bucket déjà existant."
+        fi
+    # Vérifie l'existence du bucket backend pour Terraform. Si le bucket n'existe pas, il est créé avant d’initialiser Terraform.
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
+    # Installe Terraform dans l'environnement GitHub Actions.
 
     - name: Terraform Init
-      run: terraform init -input=false
+      run: terraform init -input=false -backend-config="bucket=backend-terraform-a23dsti-deep-learning-project"
       working-directory: terraform/
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+
+    # Initialise Terraform avec le backend S3. Ce backend enregistre l'état Terraform dans le bucket `backend-terraform-a23dsti-deep-learning-project`.
 
     - name: Terraform Apply
       run: terraform apply -auto-approve
@@ -32,324 +55,138 @@ jobs:
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
 
-  fetch_ip_from_state:
-    name: Fetch EC2 IP from Terraform State and Update S3
-    needs: terraform
+    # Exécute Terraform pour créer les ressources spécifiées dans le fichier `main.tf`, en utilisant `-auto-approve` pour ignorer la confirmation manuelle.
+
+  deploy_sagemaker:
+    name: Deploy and Execute SageMaker Notebook
     runs-on: ubuntu-latest
-
-    steps:
-    - name: Download terraform.tfstate from S3
-      run: aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/terraform.tfstate terraform.tfstate
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-
-    - name: Extract EC2 IP from state and update S3
-      run: |
-        IP=$(jq -r '.resources[] | select(.type=="aws_instance") | .instances[0].attributes.public_ip' terraform.tfstate)
-        echo "EC2 Public IP: $IP"
-        echo "$IP" > ec2_ip.txt
-        aws s3 cp ec2_ip.txt s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt
-        echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-
-    - name: Check EC2_PUBLIC_IP
-      run: echo "EC2_PUBLIC_IP is $EC2_PUBLIC_IP"
-
-  ansible_install_docker:
-    name: Install Docker on EC2 using Ansible
-    needs: fetch_ip_from_state
-    runs-on: ubuntu-latest
+    needs: setup_infrastructure
 
     steps:
     - name: Checkout the code
       uses: actions/checkout@v3
+    # Récupère le code du dépôt GitHub pour l'exécution du workflow.
 
-    - name: Install Ansible
-      run: sudo apt-get update && sudo apt-get install -y ansible
+    - name: Setup AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+        aws-session-token : ${{ secrets.AWS_SESSION_TOKEN }}
 
-    - name: Download terraform.tfstate from S3
-      run: aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/terraform.tfstate terraform.tfstate
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
+    # Configure les identifiants AWS pour que les actions GitHub puissent interagir avec les services AWS.
 
-    - name: Extract EC2 IP from state and update S3
+    - name: Copy Model and Requirements to S3
       run: |
-        IP=$(jq -r '.resources[] | select(.type=="aws_instance") | .instances[0].attributes.public_ip' terraform.tfstate)
-        echo "EC2 Public IP: $IP"
-        echo "$IP" > ec2_ip.txt
-        aws s3 cp ec2_ip.txt s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt
-        echo "EC2_PUBLIC_IP=$IP" >> $GITHUB_ENV
+        aws s3 cp ./Model.ipynb s3://images-projet-deep-learning/Model.ipynb
+        aws s3 cp ./requirements.txt s3://images-projet-deep-learning/requirements.txt
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
 
-    - name: Install Docker on EC2 via Ansible
-      working-directory: ansible
+    # Copie le modèle (`Model.ipynb`) et `requirements.txt` dans le bucket S3 `images-projet-deep-learning`.
+
+    - name: Launch SageMaker Notebook
       run: |
-        echo "$SSH_PRIVATE_KEY" > private_key.pem
-        chmod 600 private_key.pem
-        echo "EC2_PUBLIC_IP is $EC2_PUBLIC_IP"
-        ansible-playbook -i inventory.yml playbooks/main.yml
+        import boto3
+
+        client = boto3.client('sagemaker')
+        notebook_instance_name = "deep-learning-notebook-instance"
+
+        # Création du Notebook SageMaker avec le rôle défini dans AWS_ROLE
+        client.create_notebook_instance(
+          NotebookInstanceName=notebook_instance_name,
+          InstanceType='ml.t2.medium',
+          RoleArn='arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE }}',
+          DirectInternetAccess='Enabled',
+          RootAccess='Enabled',
+          VolumeSizeInGB=10,
+        )
+
+        # Attendre que le notebook soit prêt
+        waiter = client.get_waiter('notebook_instance_in_service')
+        waiter.wait(NotebookInstanceName=notebook_instance_name)
+
+        # Exécuter le notebook
+        client.start_notebook_instance(NotebookInstanceName=notebook_instance_name)
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-
-  build_and_deploy:
-    name: Build and Deploy Docker container
-    needs: ansible_install_docker
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout the code
-      uses: actions/checkout@v3
-
-    - name: Log in to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
 
-    # Étape pour vérifier si l'image a changé
-    - name: Check if Docker image has changed
-      id: check-image
+    # Lance une instance SageMaker Notebook en utilisant le rôle IAM spécifié dans `AWS_ROLE`, et attend qu'elle soit prête pour exécuter le modèle.
+
+    - name: Download Model and Requirements in SageMaker Notebook
       run: |
-        # Obtenir l'ID de l'image actuelle dans le registre
-        IMAGE_DIGEST=$(aws ecr describe-images --repository-name my-deep-learning-model --region ${{ secrets.AWS_REGION }} --query 'imageDetails[0].imageDigest' --output text)
+        import boto3
+        import os
 
-        # Vérifier si nous avons déjà enregistré le digest de l'image précédente
-        if [ -f .docker_digest ]; then
-          LAST_DIGEST=$(cat .docker_digest)
-          if [ "$IMAGE_DIGEST" == "$LAST_DIGEST" ]; then
-            echo "L'image Docker n'a pas changé, skip le build et le push."
-            echo "IMAGE_CHANGED=false" >> $GITHUB_ENV
-            exit 0
-          fi
-        fi
-        echo "IMAGE_CHANGED=true" >> $GITHUB_ENV
+        s3 = boto3.client('s3')
+        local_path = '/home/ec2-user/SageMaker'
+
+        if not os.path.exists(local_path):
+            os.makedirs(local_path)
+
+        s3.download_file('images-projet-deep-learning', 'Model.ipynb', os.path.join(local_path, 'Model.ipynb'))
+        s3.download_file('images-projet-deep-learning', 'requirements.txt', os.path.join(local_path, 'requirements.txt'))
+
+        print("Modèle et fichier requirements.txt téléchargés avec succès dans le répertoire du notebook.")
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
-
-    - name: Build and Push Docker image (if changed)
-      if: env.IMAGE_CHANGED == 'true'
-      run: |
-        docker build -t my-deep-learning-model:latest -f docker/Dockerfile .
-        docker tag my-deep-learning-model:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
-        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
-
-        # Enregistrer le nouveau digest de l'image poussée
-        aws ecr describe-images --repository-name my-deep-learning-model --region ${{ secrets.AWS_REGION }} --query 'imageDetails[0].imageDigest' --output text > .docker_digest
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
+        
+    # Télécharge le modèle et `requirements.txt` dans le répertoire de travail du notebook SageMaker, pour qu’ils soient disponibles localement lors de l'exécution.
 
-    - name: Save Docker image as tarball
-      if: env.IMAGE_CHANGED == 'true'
+    - name: Monitor SageMaker Notebook Execution
       run: |
-        docker save -o my-dl-model.tar ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
-        echo "Docker image saved as tarball."
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-      
-    - name: Copy Docker tarball to EC2
-      run: |
-        # Supprimer tout fichier de clé privé existant et créer une nouvelle clé
-        rm -f private_key.pem
-        echo "$SSH_PRIVATE_KEY" > private_key.pem
-        chmod 600 private_key.pem
+        python - <<EOF
+        import boto3
+        import time
 
-        # Télécharger l'adresse IP de l'EC2 depuis S3
-        aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
-        IP=$(cat ec2_ip.txt)
-        echo "EC2 IP: $IP"
+        logs_client = boto3.client('logs')
+        notebook_instance_name = "deep-learning-notebook-instance"
+        log_group_name = f'/aws/sagemaker/NotebookInstances/{notebook_instance_name}'
 
-        # Préparer l'accès SSH
-        mkdir -p ~/.ssh  # Crée le répertoire si nécessaire
-        ssh-keyscan -H $IP >> ~/.ssh/known_hosts
+        print(f"Suivi des logs pour {notebook_instance_name}...")
 
-        # Transférer le fichier Docker tarball à l'instance EC2
-        scp -i private_key.pem my-dl-model.tar ec2-user@$IP:/home/ec2-user/
-        echo "Docker tarball copied to EC2."
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        while True:
+            log_streams = logs_client.describe_log_streams(
+                logGroupName=log_group_name,
+                orderBy='LastEventTime',
+                descending=True,
+                limit=1
+            )
 
-    - name: SSH into EC2 and load Docker image
-      run: |
-        # Supprimer tout fichier de clé privé existant et créer une nouvelle clé
-        rm -f private_key.pem
-        echo "$SSH_PRIVATE_KEY" > private_key.pem
-        chmod 600 private_key.pem
-    
-        # Télécharger l'adresse IP de l'EC2 depuis S3
-        aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
-        IP=$(cat ec2_ip.txt)
-        echo "EC2 IP: $IP"
-    
-        # Vérification si l'IP est bien définie
-        if [ -z "$IP" ]; then
-          echo "EC2 IP is not defined, exiting."
-          exit 1
-        fi
-    
-        # Préparer l'accès SSH
-        mkdir -p ~/.ssh  # Crée le répertoire si nécessaire
-        ssh-keyscan -H $IP >> ~/.ssh/known_hosts
-    
-        # Connexion et chargement de l'image Docker sur EC2
-        ssh -vvv -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP << EOF
-          docker load -i /home/ec2-user/my-dl-model.tar
-          sudo docker run -d -p 80:80 ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-deep-learning-model:latest
+            if log_streams['logStreams']:
+                log_stream_name = log_streams['logStreams'][0]['logStreamName']
+                log_events = logs_client.get_log_events(
+                    logGroupName=log_group_name,
+                    logStreamName=log_stream_name,
+                    startFromHead=True
+                )
+                for event in log_events['events']:
+                    print(event['message'])
+            else:
+                print("Aucun log trouvé pour le moment. En attente...")
+
+            time.sleep(10)
         EOF
-    
-        # Nettoyage du fichier clé
-        rm private_key.pem
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    # Surveille les logs CloudWatch du notebook pour suivre l'exécution du modèle en temps réel.
 
-    - name: SSH into EC2 and check all containers
+    - name: Stop and Clean Up SageMaker Notebook
       run: |
-        # Supprimer tout fichier de clé privé existant et créer une nouvelle clé
-        rm -f private_key.pem
-        echo "$SSH_PRIVATE_KEY" > private_key.pem
-        chmod 600 private_key.pem
-    
-        # Télécharger l'adresse IP de l'EC2 depuis S3
-        aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
-        IP=$(cat ec2_ip.txt)
-        echo "EC2 IP: $IP"
-    
-        # Préparer l'accès SSH
-        mkdir -p ~/.ssh
-        ssh-keyscan -H $IP >> ~/.ssh/known_hosts
-    
-        # Vérifier tous les conteneurs, y compris ceux arrêtés
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP "docker ps -a"
-    
-        # Nettoyage du fichier clé
-        rm private_key.pem
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-      
-    - name: SSH into EC2 and show logs for the stopped container
-      run: |
-          # Supprimer tout fichier de clé privé existant et créer une nouvelle clé
-          rm -f private_key.pem
-          echo "$SSH_PRIVATE_KEY" > private_key.pem
-          chmod 600 private_key.pem
-      
-          # Télécharger l'adresse IP de l'EC2 depuis S3
-          aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
-          IP=$(cat ec2_ip.txt)
-          echo "EC2 IP: $IP"
-      
-          # Vérification si l'IP est bien définie
-          if [ -z "$IP" ]; then
-            echo "EC2 IP is not defined, exiting."
-            exit 1
-          fi
-      
-          # Préparer l'accès SSH
-          mkdir -p ~/.ssh
-          ssh-keyscan -H $IP >> ~/.ssh/known_hosts
-      
-          # Connexion à l'instance EC2 et afficher les logs du dernier conteneur arrêté
-          CONTAINER_ID=$(ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP "docker ps -a -q --filter ancestor=my-deep-learning-model:latest --filter status=exited | head -n 1")
-          if [ -n "$CONTAINER_ID" ]; then
-            echo "Conteneur arrêté trouvé. Affichage des logs :"
-            ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP "docker logs $CONTAINER_ID"
-          else
-            echo "Aucun conteneur arrêté trouvé."
-          fi
-      
-          # Nettoyage du fichier clé
-          rm private_key.pem
-      env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-      
-
-          
-  follow_logs:
-    name: Follow Model Execution Logs
-    needs: build_and_deploy
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: SSH into EC2 and follow Docker logs
-      run: |
-        # Supprimer tout fichier de clé privé existant et créer une nouvelle clé
-        rm -f private_key.pem
-        echo "$SSH_PRIVATE_KEY" > private_key.pem
-        chmod 600 private_key.pem
-    
-        # Télécharger l'adresse IP de l'EC2 depuis S3
-        aws s3 cp s3://backend-terraform-a23dsti-deep-learning-project/ingeneurie/ec2_ip.txt ec2_ip.txt
-        IP=$(cat ec2_ip.txt)
-        echo "EC2 IP: $IP"
-    
-        # Préparer l'accès SSH
-        mkdir -p ~/.ssh
-        ssh-keyscan -H $IP >> ~/.ssh/known_hosts
-    
-        # Connexion à l'instance EC2 et suivi des logs du conteneur si en cours d'exécution
-        CONTAINER_ID=$(ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP "docker ps -q --filter ancestor=my-deep-learning-model:latest")
-        if [ -n "$CONTAINER_ID" ]; then
-          echo "Conteneur en cours d'exécution trouvé. Affichage des logs :"
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ec2-user@$IP "docker logs -f $CONTAINER_ID"
-        else
-          echo "Aucun conteneur en cours d'exécution trouvé."
-        fi
-    
-        # Nettoyage du fichier clé
-        rm private_key.pem
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-    
+        client = boto3.client('sagemaker')
+        notebook_instance_name = "deep-learning-notebook-instance"
+        
+        client.stop_notebook_instance(NotebookInstanceName=notebook_instance_name)
+        client.delete_notebook_instance(NotebookInstanceName=notebook_instance_name)
+    # Arrête et supprime l’instance de notebook SageMaker pour libérer les ressources après l'exécution du modèle.
