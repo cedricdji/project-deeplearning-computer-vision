@@ -82,7 +82,7 @@ jobs:
 
     - name: Copy Model and Requirements to S3
       run: |
-        aws s3 cp Model.ipynb s3://images-projet-deep-learning/Model.ipynb
+        aws s3 cp model.ipynb s3://images-projet-deep-learning/Model.ipynb
         aws s3 cp requirements.txt s3://images-projet-deep-learning/requirements.txt
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
