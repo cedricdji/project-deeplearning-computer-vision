@@ -150,11 +150,11 @@ A number of toggles are provided at the top of the code. They allow:
 - Early break (end early if the validation loss has an increasing trend)
 - Cheat... add the target to the metadata! This is ONLY for debugging.
 
-# ► System requirements (minimum)<br>
+# ► System requirements (minimum)
 Operating system: Windows, macOS, Linux<br>
 GPU: not required, but much preferred (see Tensorflow for supported GPUs)<br>
 CPU: 4-core, modern<br>
-RAM: 8GB (16GB allows for accelerated processing)
+RAM: 8GB (16GB allows for validation data to be stored in memory)
 
 # ► Server instances
 The model has been tested on AWS SageMaker linked to an S3 bucket, with the input and output files stored in the S3 bucket. The preferred architecture for fast training is:<br>
