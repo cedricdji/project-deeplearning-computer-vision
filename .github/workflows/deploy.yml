@@ -58,20 +58,20 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
 
-      - name: Wait for Notebook to be Ready
-        run: |
-          notebook_instance_name="deep-learning-notebook-instance-1"
-          while true; do
-            status=$(aws sagemaker describe-notebook-instance --notebook-instance-name $notebook_instance_name --query 'NotebookInstanceStatus' --output text)
-            echo "Current status: $status"
-            if [ "$status" == "InService" ]; then
-              echo "Notebook is ready!"
-              break
-            else
-              echo "Waiting for the notebook to be ready..."
-              sleep 30
-            fi
-          done
+      # - name: Wait for Notebook to be Ready
+      #   run: |
+      #     notebook_instance_name="deep-learning-notebook-instance-1"
+      #     while true; do
+      #       status=$(aws sagemaker describe-notebook-instance --notebook-instance-name $notebook_instance_name --query 'NotebookInstanceStatus' --output text)
+      #       echo "Current status: $status"
+      #       if [ "$status" == "InService" ]; then
+      #         echo "Notebook is ready!"
+      #         break
+      #       else
+      #         echo "Waiting for the notebook to be ready..."
+      #         sleep 30
+      #       fi
+      #     done
 
   copy_and_run_model:
     name: Copy Files and Run Model
