@@ -3,7 +3,7 @@
 
 # ► Introduction
 
-This project takes color images of skin lesions and growths and applies a convolutional neural network (CNN) to determine if the lesion is malignant or benign. The images are accompanied by metadata containing the target value (1 = malignant, 0 = benign) and other information. The other information is integrated into the CNN after cleaning and selection of the most relevant features.
+This project takes color images of skin lesions and growths and applies a convolutional neural network (CNN) to determine if the lesion is malignant or benign. The images are accompanied by metadata containing the target value (1 = malignant, 0 = benign) and other information. The data is highly unbalanced, with 393 malignant samples compared to 400666 benign. Data augmentation is performed on the Target = 1 samples. Feature selection is performed on the metadata. Two CNNs are examined: in-series and in-parallel models. The in-series model starts with convolutional layers, then concatenates the metadata before running a full neural network. The in-parallel model runs the metadata through a neural network in parallel with the convolutional layers, then concatenates the outputs before a final layer. In addition, a hair removal algorithm is examined. Each model is run with and without hair removal to determine the better approach.
 
 # ► The interest of the project
 
@@ -86,7 +86,7 @@ The Model file is highly parametrizeable. It can take many hours or several minu
   -	Model_Epoch_?.weights.h5 (? = Epoch number) : Save of model weights at the end of an epoch. The save frequency can be set.
   -	Model_Last_Epoch.weights.h5 : Save of model weights after all Epochs.
 
-The Model has several main features: generation of train/validate/test lists, image augmentation, metadata dictionary creation (speeds up code), dataset creation (generator or loading in RAM), model definition, model fit, model test, and exportation of results/weights.
+The Model has several main features: generation of train/validate/test lists, hair removal/image augmentation, metadata dictionary creation (speeds up code), dataset creation (generator or loading in RAM), model definition, model fit, model test, and exportation of results/weights.
 
 ### A. Generation of train/validate/test lists
 The data is very unequilibrated, with very few target = 1 results. The following measures are used to ensure more equilibrated data:
@@ -100,7 +100,9 @@ The data is very unequilibrated, with very few target = 1 results. The following
 8. Concatenate and shuffle the train lists and validation lists
 9. Limit training and validation data to speed up training (take only fraction of prepared lists)
 
-### B. Image augmentation:
+### B. Hair removal / Image augmentation:
+Hair removal is applied to all images when it is activated. Augmentations are applied to Target = 1 samples in the validation data and, to a lesser extent, the training data.
+
 The following primary augmentation functions are used:
 - flip right-left
 - flip up-down
@@ -132,6 +134,21 @@ The model is used to predict the target values of test data. A number of metrics
 
 ### G. Exportation of results/weights
 These are exported by default. Only the exportation of weights can be deactivated with a simple toggle.
+
+### H. Toggles
+A number of toggles are provided at the top of the code. They allow:
+- Taking fewer samples from train, validate, and test data.
+- Saving datasets in RAM (validate data in memory is suggested, while train data in memory usually proves problematic)
+- Weights export saving frequency
+- Train-validate-test parameters
+- Image resizing (all images must have the same size before being fed to the NN)
+- Hair removal
+- Batch sizes
+- Neurons and dropout in deep layers of the NN
+- Learning rate
+- Number of epochs
+- Early break (end early if the validation loss has an increasing trend)
+- Cheat... add the target to the metadata! This is ONLY for debugging.
 
 # ► System requirements (minimum)<br>
 Operating system: Windows, macOS, Linux<br>
