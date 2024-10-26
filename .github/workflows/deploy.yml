@@ -76,6 +76,12 @@ jobs:
         run: |
           aws s3 cp s3://images-projet-deep-learning/model.ipynb /home/ec2-user/SageMaker/model.ipynb
           aws s3 cp s3://images-projet-deep-learning/requirements.txt /home/ec2-user/SageMaker/requirements.txt
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+
 
       - name: Run Model on SageMaker
         run: |
@@ -84,6 +90,11 @@ jobs:
           client = boto3.client('sagemaker')
           client.start_notebook_instance(NotebookInstanceName="deep-learning-notebook-instance-1")
           EOF
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
 
   monitor_notebook:
     name: Monitor SageMaker Notebook Logs
@@ -136,3 +147,8 @@ jobs:
 
               time.sleep(10)
           EOF
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
