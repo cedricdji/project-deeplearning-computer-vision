@@ -60,6 +60,7 @@ After completing the installation, the code will be functional after the followi
 -	Place all ipynb files in the same directory
 -	Place all csv and hdf5 files in a subdirectory to store input data ("/data" for example)
 -	Create a new subdirectory for the save files ("/saves" for example)
+-	See the Section VII. Deployement for extra instructions concerning the SageMaker setup.
 #### EDA.ipynb:
 -	At top of code in section titled "Create directory paths for the project", update the dataPath variable with the path for directory where the *train-metadata.csv* and *train-image.hdf5* files are stored.
 -	In same section, adjust the file names if necessary
@@ -67,6 +68,9 @@ After completing the installation, the code will be functional after the followi
 -	In section 2.1, update the dataPath variable with the path for directory where the *cleaned-metadata.csv* and *train-image.hdf5* files are stored.
 -	In same section, update the savePath variable with the path for directory where model outputs will be saved.
 -	In same section, adjust the file names if necessary.
+-	If using the SageMaker setup:
+    -	uncomment the pip install commands in the first notebook cell.
+    -	set the use_sagemaker toggle to True.
 #### generate_data_subset.ipynb (optional):
 - At top of code, declare the filepaths and filenames.
 
@@ -204,7 +208,7 @@ The project is deployed using Amazon Web Services (AWS) with the following archi
 3.	Instance Type : The model training is optimized on the ml.g5.2xlarge(not free) instance type, which provides GPU support to reduce the computation time for complex deep learning tasks.
 
 ## :clipboard: Deployment Process
-The entire deployment process is automated through the deploy.yml file, which orchestrates the workflow and executes each step seamlessly.
+The entire deployment process is automated through the deploy.yml file, which orchestrates the workflow and executes each step seamlessly. The Model.ipynb file must have the correct settings for it to work properly (uncomment the pip install commands in the first notebook cell and set the use_sagemaker toggle to True).
 1.	Data Preparation:
     - The deploy.yml file includes the step to upload train-image.hdf5 and train-metadata.csv to an S3 bucket (e.g., images-projet-deep-learning-01) (or you can do it manually before the pipeline starting)
 2.	Environment Setup:
