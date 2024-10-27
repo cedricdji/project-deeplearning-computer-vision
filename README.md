@@ -1,21 +1,21 @@
 # Skin Cancer Detection with 3D-TBP using a CNN (ISIC 2024 Contest)
 **Contest link:** https://www.kaggle.com/competitions/isic-2024-challenge
 
-# ► Introduction
+# ► I. Introduction
 
 This project takes color images of skin lesions and growths and applies a convolutional neural network (CNN) to determine if the lesion is malignant or benign. The images are accompanied by metadata containing the target value (1 = malignant, 0 = benign) and other information. The data is highly unbalanced, with 393 malignant samples compared to 400666 benign. Data augmentation is performed on the Target = 1 samples. Feature selection is performed on the metadata.  
 
-Two CNNs are examined: in-series and in-parallel models. The in-series model starts with convolutional layers, then concatenates the metadata before running a full neural network. The in-parallel model runs the metadata through a neural network in parallel with the convolutional layers, then concatenates the outputs before a final layer. In addition, a hair removal algorithm is examined. Each model is run with and without hair removal to determine the better approach. The model structures are as follows:
+Two CNNs are examined: in-series and in-parallel models. The in-series model starts with convolutional layers, then concatenates the metadata before running a full neural network. The in-parallel model runs the metadata through a neural network in parallel with the convolutional layers, then concatenates the outputs before a final layer. In addition, a hair removal algorithm is examined, which alters the image inputs. Each model is run with and without hair removal to determine the better approach. The model structures are as follows:
 
 ![](images/model_structures.png)
 
-# ► The interest of the project
+# ► II. The interest of the project
 
 Skin cancer is a frequent form of cancer that can be deadly if not caught early. A model capable of determining if lesions are malignant would be useful in prefiltering patients before consultation with a specialist.
 
-# ► How to Install and Run the Project
+# ► III. How to Install and Run the Project
 
-## Installation
+## A. Installation
 
 ### *Prerequisites:*
 1.	Python 3.11.9 environment
@@ -49,7 +49,7 @@ Skin cancer is a frequent form of cancer that can be deadly if not caught early.
 - sample-image.hdf5
 - sample-metadata.csv
 
-## Making the code functional:
+## B. Making the code functional:
 After completing the installation, the code will be functional after the following steps:
 -	Place all ipynb files in the same directory
 -	Place all csv and hdf5 files in a subdirectory to store input data ("/data" for example)
@@ -64,11 +64,11 @@ After completing the installation, the code will be functional after the followi
 #### hdf5_write.ipynb (optional):
 - At top of code, declare the filepaths and filenames.
 
-## Run order:
+## C. Run order:
 The *EDA* notebook must be run first. It generates a cleaned metadata file used by the *Model* notebook. The *hdf5_write* notebook is optional and can be run on either the train-metadata.csv or cleaned-metadata.csv files to create a smaller, more manageable version that can be used with the other notebooks.
 
-# ► Details on project notebooks
-## Using EDA.ipynb
+# ► IV. Details on project notebooks
+## A. Using EDA.ipynb
 The EDA file takes a couple hours to run in general.  
 - Input files:
   - train-image.hdf5
@@ -76,10 +76,10 @@ The EDA file takes a couple hours to run in general.
 - Output files:
   - cleaned-metadata.csv
 
-The EDA has multiple purposes. The unmodified metadata images are examined, including basic statistical parameters and the number of NAs. Some example images are printed to see what exactly the model will be dealing with. Different image augmentation algorithms are examined, with image printing to demonstrate them. Feature cleaning and normalization/standardization of performed. Then feature selection is performed, using 3 different models: Random Forest, Logistic Regression, and XGBoost. The final selected features are chosen manually, using the results from these models as a guide. Finally, the selected features are output into a file. This file contains isic_id, target, and cleaned features. It is the metadata input to Model.ipynb.
+The EDA has multiple purposes. The unmodified metadata images are examined, including basic statistical parameters and the number of NAs. Some example images are printed to see what exactly the model will be dealing with. Different image augmentation algorithms are examined, with image printing to demonstrate them. Feature cleaning and normalization/standardization are performed. Then feature selection is performed, using 3 different models: Random Forest, Logistic Regression, and XGBoost. The final selected features are chosen manually, using the results from these models as a guide. Finally, the selected features are output into a file. This file contains isic_id, target, and cleaned features. It is the metadata input to Model.ipynb.
 
-## Using Model.ipynb:
-The Model file is highly parametrizeable. It can take many hours or several minutes, depending on user selections. This will be detailed later.  
+## B. Using Model.ipynb:
+The Model file is highly parametrizeable. A single run can take many hours or several minutes, depending on user selections (number of batches, sample size, hair removal, etc.). This will be detailed later.  
 - Input files:
   - train-image.hdf5
   - cleaned-metadata.csv
@@ -92,7 +92,7 @@ The Model file is highly parametrizeable. It can take many hours or several minu
 
 The Model has several main features: generation of train/validate/test lists, hair removal/image augmentation, metadata dictionary creation (speeds up code), dataset creation (generator or loading in RAM), model definition, model fit, model test, and exportation of results/weights.
 
-### A. Generation of train/validate/test lists
+### i) Generation of train/validate/test lists
 The data is very unequilibrated, with very few target = 1 results. The following measures are used to ensure more equilibrated data:
 1. Make two separate lists of isic_ids for target=0 and target=1. Transform into tuples (isic_id, target, mod toggle). Base data has mod toggle = 0, meaning no adjustment will be made.
 2. Reserve 10% of target = 1 for validate
@@ -104,7 +104,7 @@ The data is very unequilibrated, with very few target = 1 results. The following
 8. Concatenate and shuffle the train lists and validation lists
 9. Limit training and validation data to speed up training (take only fraction of prepared lists)
 
-### B. Hair removal / Image augmentation:
+### ii) Hair removal / Image augmentation:
 Hair removal is applied to all images when it is activated. Augmentations are applied to Target = 1 samples in the validation data and, to a lesser extent, the training data.
 
 The following primary augmentation functions are used:
@@ -118,28 +118,28 @@ Additional augmentations are applied on top of the primary augmentations (some a
 - Saturation increase / decrease
 - Contrast increase / decrease
 
-### C. Metadata dictionary creation
+### iii) Metadata dictionary creation
 Querying of a dictionary is very fast in Python. Thus, all main data is placed in a dictionary. The dictionary is queried by iterating through a list that contains the keys. A dataset is generated by iterating through the list one by one. A shuffle of the list translates into a shuffling of the data set.
 
-### D. Dataset creation
+### iv) Dataset creation
 The tensorflow dataset structure is a practical way to prepare data for a neural network. Datasets are created for train, validate, and test splits. Batching and prefetching are used on all the datasets. Two approaches are used to create these datasets:
 - On demand: data is not stored in memory, it is accessed when needed via a generator
 - Preload into RAM: data is stored in memory. This takes time, but allow for extremely fast data access during the neural network calculations.
 
 Both train and validate data can use both methods. Test data only uses the on demand method (the generator is only called twice).
 
-### E. Model definition
+### v) Model definition
 Two models are defined. Only one is run. The user must select the desired model in advance. The models are:
 - In series: Convolutional layers are followed by a concatenation with metadata and then a NN.
 - In parallel: Convolution layers are run in parallel to a metadata NN, followed by concatenation then a final layer.
 
-### F. Test predictions
+### vi) Test predictions
 The model is used to predict the target values of test data. A number of metrics are calculated here.
 
-### G. Exportation of results/weights
+### vii) Exportation of results/weights
 These are exported by default. Only the exportation of weights can be deactivated with a simple toggle.
 
-### H. Toggles
+### viii) Toggles
 A number of toggles are provided at the top of the code. They allow:
 - Taking fewer samples from train, validate, and test data.
 - Saving datasets in RAM (validate data in memory is suggested, while train data in memory usually proves problematic)
@@ -154,20 +154,29 @@ A number of toggles are provided at the top of the code. They allow:
 - Early break (end early if the validation loss has an increasing trend)
 - Cheat... add the target to the metadata! This is ONLY for debugging.
 
-# ► System requirements (minimum)
+For fast verifications, the following is useful:
+- train_frac_to_use = 0.01
+- val_frac_to_use = 0.01
+- test_frac_to_use = 0.3
+- save_train_in_memory = False
+- save_val_in_memory = False
+- apply_hair_removal = False
+- nb_epochs = 1
+
+# ► V. System requirements (minimum)
 Operating system: Windows, macOS, Linux<br>
 GPU: not required, but much preferred (see Tensorflow for supported GPUs)<br>
 CPU: 4-core, modern<br>
-RAM: 8GB (16GB allows for validation data to be stored in memory)
+RAM: 8GB (16GB *usually* allows for validation data to be stored in memory)
 
-# ► Server instances
+# ► VI. Server instances
 The model has been tested on AWS SageMaker linked to an S3 bucket, with the input and output files stored in the S3 bucket. The preferred architecture for fast training is:<br>
 ***????????***
 ***????????***
 ***????????***
 ***????????***
 
-# ► Credit
+# ► VII. Credit
 The primary project was created by:<br>
 -	Claire Davat
 -	Wilfried Cédric Koffi Djivo
