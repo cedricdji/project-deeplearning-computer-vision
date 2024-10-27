@@ -85,7 +85,7 @@ resource "aws_sagemaker_notebook_instance" "notebook" {
   direct_internet_access = "Enabled"
   root_access            = "Enabled"
   volume_size            = 5
-#lifecycle_config_name  = aws_sagemaker_notebook_instance_lifecycle_configuration.notebook_lifecycle_config.name
+# lifecycle_config_name  = aws_sagemaker_notebook_instance_lifecycle_configuration.notebook_lifecycle_config.name
   subnet_id              = var.subnet_id
   security_groups = var.security_group_ids
   tags = {

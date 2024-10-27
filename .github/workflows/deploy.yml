@@ -94,6 +94,11 @@ jobs:
           export REQUIREMENTS_URL=$(aws s3 presign s3://images-projet-deep-learning/requirements.txt --expires-in 3600)
           echo "MODEL_URL=$MODEL_URL" >> $GITHUB_ENV
           echo "REQUIREMENTS_URL=$REQUIREMENTS_URL" >> $GITHUB_ENV
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
 
       - name: Download Files to SageMaker
         run: |
@@ -107,6 +112,13 @@ jobs:
           urllib.request.urlretrieve(model_url, "/home/ec2-user/SageMaker/model.ipynb")
           urllib.request.urlretrieve(requirements_url, "/home/ec2-user/SageMaker/requirements.txt")
           EOF
+        env:
+          MODEL_URL: ${{ steps.presign.outputs.MODEL_URL }}
+          REQUIREMENTS_URL: ${{ steps.presign.outputs.REQUIREMENTS_URL }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
 
   monitor_notebook:
     name: Monitor SageMaker Notebook Logs
@@ -159,3 +171,8 @@ jobs:
 
               time.sleep(10)
           EOF
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}

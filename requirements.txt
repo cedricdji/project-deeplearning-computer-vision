@@ -1,3 +1,5 @@
+setuptools==58.0.4
+keras-cv==0.9.0
 absl-py==2.1.0
 alembic==1.13.3
 annotated-types==0.7.0
@@ -7,9 +9,7 @@ asttokens==2.4.1
 astunparse==1.6.3
 attrs==23.2.0
 beautifulsoup4==4.12.3
-setuptools==58.0.4
 promise==2.3
-keras-cv==0.9.0
 bleach==6.1.0
 blinker==1.8.2
 boto3==1.35.44
