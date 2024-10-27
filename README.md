@@ -1,7 +1,7 @@
 # Skin Cancer Detection with 3D-TBP using a CNN (ISIC 2024 Contest)
 **Contest link:** https://www.kaggle.com/competitions/isic-2024-challenge
 
-# ► I. Introduction
+# ► I. :rocket: Introduction
 
 This project takes color images of skin lesions and growths and applies a convolutional neural network (CNN) to determine if the lesion is malignant or benign. The images are accompanied by metadata containing the target value (1 = malignant, 0 = benign) and other information. The data is highly unbalanced, with 393 malignant samples compared to 400666 benign. Data augmentation is performed on the Target = 1 samples. Feature selection is performed on the metadata.  
 
@@ -9,7 +9,7 @@ Two CNNs are examined: in-series and in-parallel models. The in-series model sta
 
 ![](images/model_structures.png)
 
-# ► II. The interest of the project
+# ► II. :open_book: The interest of the project
 
 Skin cancer is a frequent form of cancer that can be deadly if not caught early. A model capable of determining if lesions are malignant would be useful in prefiltering patients before consultation with a specialist. Images can be particularly useful in detecting potentially cancerous lesions as they can reveal morphological features that are not easily discernible to the human eye, as long as they are of high enough quality. These images are best captured in dermatology clinics, but the reality is that many primary care facilities of non-clinical settings cannot reliably provide a high quality image (source: Kaggle competition). This paper discusses two CNN models designed to take low quality images, associated with metadata, to perform supervised learning. The datasets are provided through a competition on Kaggle. Considering the models are targeted for medical use and need to be highly-sensitive, the competition requires evaluation using the following metric: partial aread under the ROC curve (pAUC) above 80% true positive rate (TPR). Under these constraints, the highest possible pAUC is 0.20. The proposed models achieve a pAUC of around 0.1, though cross validation is not performed. They models would need to be run multiple times with a different random seed for the train-validate-test split.
 
