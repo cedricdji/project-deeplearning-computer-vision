@@ -32,3 +32,10 @@ files/
 # old files
 .github/workflows/deploy-old.yml
 /old/
+
+# hidden folder models
+/models/
+/modele1-whith-hair/
+ansible/
+docker/
+
