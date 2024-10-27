@@ -204,15 +204,15 @@ The project is deployed using Amazon Web Services (AWS) with the following archi
 ## Deployment Process
 The entire deployment process is automated through the deploy.yml file, which orchestrates the workflow and executes each step seamlessly.
 1.	Data Preparation:
-o	The deploy.yml file includes the step to upload train-image.hdf5 and train-metadata.csv to an S3 bucket (e.g., images-projet-deep-learning-01) (or you can do it manually before the pipeline starting)
+    - The deploy.yml file includes the step to upload train-image.hdf5 and train-metadata.csv to an S3 bucket (e.g., images-projet-deep-learning-01) (or you can do it manually before the pipeline starting)
 2.	Environment Setup:
-o	The deploy.yml file manages the launch of a SageMaker instance (e.g., ml.g5.2xlarge), configured with the necessary IAM roles to access the S3 bucket.
+    - The deploy.yml file manages the launch of a SageMaker instance (e.g., ml.g5.2xlarge), configured with the necessary IAM roles to access the S3 bucket.
 3.	Model Training:
-o	Model.ipynb is executed to train the CNN model on SageMaker. Data is retrieved from S3, and model weights are periodically saved back to S3.
+    - Model.ipynb is executed to train the CNN model on SageMaker. Data is retrieved from S3, and model weights are periodically saved back to S3.
 4.	Model Testing and Evaluation:
-o	After training, the deploy.yml file orchestrates model testing, saving evaluation metrics to model_results_save.csv and predictions to test_results_save.csv, both stored in S3.
+    - After training, the deploy.yml file orchestrates model testing, saving evaluation metrics to model_results_save.csv and predictions to test_results_save.csv, both stored in S3.
 5.	Inference (Optional):
-o	For real-time inference, a SageMaker endpoint can be configured, or batch processing jobs can be run using the trained model weights stored in S3.
+    - For real-time inference, a SageMaker endpoint can be configured, or batch processing jobs can be run using the trained model weights stored in S3.
 
 
 # ► VIII. Credit
