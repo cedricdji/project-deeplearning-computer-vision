@@ -187,7 +187,7 @@ GPU: not required, but much preferred (see Tensorflow for supported GPUs)<br>
 CPU: 4-core, modern<br>
 RAM: 8GB (16GB *usually* allows for validation data to be stored in memory)
 
-# ► VI. Server instances
+# ► VI. :desktop_computer: Server instances
 The model has been tested on AWS SageMaker linked to an S3 bucket, with the input and output files stored in the S3 bucket. The preferred architecture for fast training is:<br>
 -	Instance type: ml.g5.2xlarge (1 GPU NVIDIA A10G, 8 vCPU, 32GB RAM)
 -	Storage: Amazon S3 for data and artifact storage.
