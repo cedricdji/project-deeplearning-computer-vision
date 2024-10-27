@@ -167,7 +167,7 @@ For fast verifications, the following is useful:
 - apply_hair_removal = False
 - nb_epochs = 1
 
-## C. Using generate_data_subset.ipynb:
+## C. :card_index_dividers: Using generate_data_subset.ipynb:
 The generate_data_subset has a variable runtime and depends on the number of samples taken. It is designed for an independant selection of the number of samples to take for each target value 0 or 1. 
 - Input files:
   - train-image.hdf5
@@ -181,7 +181,7 @@ After updating the filepaths and filenames as desired (Part 1 of code), the only
 
 These are the number of malignant samples and the number of benign samples, respectively.
 
-# ► V. System requirements (minimum)
+# ► V. :rotating_light: System requirements (minimum)
 Operating system: Windows, macOS, Linux<br>
 GPU: not required, but much preferred (see Tensorflow for supported GPUs)<br>
 CPU: 4-core, modern<br>
