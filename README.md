@@ -9,9 +9,11 @@ Two CNNs are examined: in-series and in-parallel models. The in-series model sta
 
 ![](images/model_structures.png)
 
+The project is deployed on an AWS SageMaker instance linked to an S3 bucket for data storage. This is used for the model notebook alone. Other notebooks should be run on a local machine. Note that all notebooks are designed to run on a local machine.
+
 # ► II. :open_book: The interest of the project
 
-Skin cancer is a frequent form of cancer that can be deadly if not caught early. A model capable of determining if lesions are malignant would be useful in prefiltering patients before consultation with a specialist. Images can be particularly useful in detecting potentially cancerous lesions as they can reveal morphological features that are not easily discernible to the human eye, as long as they are of high enough quality. These images are best captured in dermatology clinics, but the reality is that many primary care facilities of non-clinical settings cannot reliably provide a high quality image (source: Kaggle competition). This paper discusses two CNN models designed to take low quality images, associated with metadata, to perform supervised learning. The datasets are provided through a competition on Kaggle. Considering the models are targeted for medical use and need to be highly-sensitive, the competition requires evaluation using the following metric: partial aread under the ROC curve (pAUC) above 80% true positive rate (TPR). Under these constraints, the highest possible pAUC is 0.20. The proposed models achieve a pAUC of around 0.1, though cross validation is not performed. They models would need to be run multiple times with a different random seed for the train-validate-test split.
+Skin cancer is a frequent form of cancer that can be deadly if not caught early. A model capable of determining if lesions are malignant would be useful in prefiltering patients before consultation with a specialist. Images can be particularly useful in detecting potentially cancerous lesions as they can reveal morphological features that are not easily discernible to the human eye, as long as they are of high enough quality. These images are best captured in dermatology clinics, but the reality is that many primary care facilities and non-clinical settings cannot reliably provide a high quality image (source: Kaggle competition). This paper discusses two CNN models designed to take low quality images, associated with metadata, to perform supervised learning. The datasets are provided through a competition on Kaggle. Considering the models are targeted for medical use and need to be highly-sensitive, the competition requires evaluation using the following metric: partial area under the ROC curve (pAUC) above 80% true positive rate (TPR). Under these constraints, the highest possible pAUC is 0.20. The proposed models achieve a pAUC of around 0.1, though cross validation is not performed. They models would need to be run multiple times with a different random seed for the train-validate-test split.
 
 # ► III. :desktop_computer: How to Install and Run the Project
 
@@ -21,8 +23,8 @@ Skin cancer is a frequent form of cancer that can be deadly if not caught early.
 1.	Python 3.11.9 environment
 2.	IDE with Jupyter Notebook extension
 3.	Conda (for environment creation)
-4.	AWS CLI configured with appropriate permissions to access S3 and SageMaker
-5.	Terraform for Infrastructure as Code (IaC) to provision AWS resources
+4.	AWS CLI configured with appropriate permissions to access S3 and SageMaker (not needed for local installations)
+5.	Terraform for Infrastructure as Code (IaC) to provision AWS resources (not needed for local installations)
    
 ### *Files:*
 ***Supplied***
