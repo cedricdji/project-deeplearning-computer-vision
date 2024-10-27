@@ -15,7 +15,7 @@ Skin cancer is a frequent form of cancer that can be deadly if not caught early.
 
 # ► III. :desktop_computer: How to Install and Run the Project
 
-## A. Installation
+## A. :clipboard: Installation
 
 ### *Prerequisites:*
 1.	Python 3.11.9 environment
@@ -215,7 +215,7 @@ The entire deployment process is automated through the deploy.yml file, which or
     - For real-time inference, a SageMaker endpoint can be configured, or batch processing jobs can be run using the trained model weights stored in S3.
 
 
-# ► VIII. Credit
+# ► VIII. :point_down: Credit
 The primary project was created by:<br>
 -	Claire Davat
 -	Wilfried Cédric Koffi Djivo
