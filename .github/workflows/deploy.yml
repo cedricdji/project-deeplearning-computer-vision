@@ -1,0 +1,178 @@
+name: SageMaker Notebook Deployment with Terraform
+
+on:
+  push:
+    branches:
+      - ingeneurie
+
+jobs:
+  setup_infrastructure:
+    name: Setup S3 Buckets and SageMaker Notebook with Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      - name: Setup AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+
+      - name: Ensure S3 Buckets Exist
+        run: |
+          for bucket in dsti-a23-deep-learning-outputs backend-terraform-a23dsti-deep-learning-project images-projet-deep-learning; do
+            if aws s3 ls "s3://$bucket" 2>&1 | grep -q 'NoSuchBucket'; then
+              echo "Bucket $bucket does not exist. Creating bucket."
+              aws s3 mb s3://$bucket --region ${{ secrets.AWS_REGION }}
+            else
+              echo "Bucket $bucket already exists."
+            fi
+          done
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init -input=false -backend-config="bucket=backend-terraform-a23dsti-deep-learning-project"
+        working-directory: terraform/
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var="role_arn=arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE }}"
+        working-directory: terraform/
+
+  wait_for_notebook:
+    name: Wait for SageMaker Notebook to Start
+    runs-on: ubuntu-latest
+    needs: setup_infrastructure
+
+    steps:
+      - name: Setup AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+
+      # - name: Wait for Notebook to be Ready
+      #   run: |
+      #     notebook_instance_name="deep-learning-notebook-instance-1"
+      #     while true; do
+      #       status=$(aws sagemaker describe-notebook-instance --notebook-instance-name $notebook_instance_name --query 'NotebookInstanceStatus' --output text)
+      #       echo "Current status: $status"
+      #       if [ "$status" == "InService" ]; then
+      #         echo "Notebook is ready!"
+      #         break
+      #       else
+      #         echo "Waiting for the notebook to be ready..."
+      #         sleep 30
+      #       fi
+      #     done
+
+  copy_and_run_model:
+    name: Copy Files and Run Model
+    runs-on: ubuntu-latest
+    needs: wait_for_notebook
+
+    steps:
+      - name: Setup AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+
+      - name: Generate Pre-Signed URLs
+        id: presign
+        run: |
+          export MODEL_URL=$(aws s3 presign s3://images-projet-deep-learning/model.ipynb --expires-in 3600)
+          export REQUIREMENTS_URL=$(aws s3 presign s3://images-projet-deep-learning/requirements.txt --expires-in 3600)
+          echo "MODEL_URL=$MODEL_URL" >> $GITHUB_ENV
+          echo "REQUIREMENTS_URL=$REQUIREMENTS_URL" >> $GITHUB_ENV
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+
+      - name: Download Files to SageMaker
+        run: |
+          python - <<EOF
+          import urllib.request
+          import os
+
+          model_url = os.getenv("MODEL_URL")
+          requirements_url = os.getenv("REQUIREMENTS_URL")
+
+          urllib.request.urlretrieve(model_url, "/home/ec2-user/SageMaker/model.ipynb")
+          urllib.request.urlretrieve(requirements_url, "/home/ec2-user/SageMaker/requirements.txt")
+          EOF
+        env:
+          MODEL_URL: ${{ steps.presign.outputs.MODEL_URL }}
+          REQUIREMENTS_URL: ${{ steps.presign.outputs.REQUIREMENTS_URL }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+
+  monitor_notebook:
+    name: Monitor SageMaker Notebook Logs
+    runs-on: ubuntu-latest
+    needs: copy_and_run_model
+
+    steps:
+      - name: Setup AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+
+      - name: Install boto3
+        run: pip install boto3
+
+      - name: Monitor Notebook Logs
+        run: |
+          python - <<EOF
+          import boto3
+          import time
+
+          logs_client = boto3.client('logs')
+          notebook_instance_name = "deep-learning-notebook-instance-1"
+          log_group_name = f'/aws/sagemaker/NotebookInstances/{notebook_instance_name}'
+
+          print(f"Suivi des logs pour {notebook_instance_name}...")
+
+          while True:
+              log_streams = logs_client.describe_log_streams(
+                  logGroupName=log_group_name,
+                  orderBy='LastEventTime',
+                  descending=True,
+                  limit=1
+              )
+
+              if log_streams['logStreams']:
+                  log_stream_name = log_streams['logStreams'][0]['logStreamName']
+                  log_events = logs_client.get_log_events(
+                      logGroupName=log_group_name,
+                      logStreamName=log_stream_name,
+                      startFromHead=True
+                  )
+                  for event in log_events['events']:
+                      print(event['message'])
+              else:
+                  print("Aucun log trouvé pour le moment. En attente...")
+
+              time.sleep(10)
+          EOF
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}

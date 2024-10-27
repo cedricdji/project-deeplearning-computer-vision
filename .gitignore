@@ -1,4 +1,41 @@
-# ignore windows and mac system files
+# Ignore Windows and Mac system files
 .DS_Store
 Thumbs.db
 ehthumbs.db
+
+# Ignore Python virtual environments
+venv/
+__pycache__/
+
+# Ignore Terraform local files and sensitive files
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars  # Ignore .tfvars files that may contain sensitive variables
+*.terraform.lock.hcl
+terraform/terraform.tfvars.backup
+terraform/ec2_public_ip.txt
+terraform/key
+
+# Ignore Terraform crash logs
+crash.log
+
+# Ignore log files
+*.log
+# local files
+files/
+
+# Ignore Archives
+*.zip
+/Archives/
+
+# old files
+.github/workflows/deploy-old.yml
+/old/
+
+# hidden folder models
+/models/
+/modele1-whith-hair/
+ansible/
+docker/
+
