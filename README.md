@@ -192,10 +192,10 @@ The model has been tested on AWS SageMaker linked to an S3 bucket, with the inpu
 •	Instance type: ml.g5.2xlarge (1 GPU NVIDIA A10G, 8 vCPU, 32GB RAM)
 •	Storage: Amazon S3 for data and artifact storage.
 
-# ► VII. Deployment
+# ► VII. :incoming_envelope: Deployment
 The notebooks are designed to run on both local machines and a server architecture. This section details the methods that apply to the server architecture.
 
- ## Deployment Architecture
+ ## :open_file_folder: Deployment Architecture
 The project is deployed using Amazon Web Services (AWS) with the following architecture:
 1.	AWS SageMaker : Used to run Jupyter notebooks for model training, with scalable instances that support GPU for faster training.
 2.	Amazon S3 : Stores input datasets and model artifacts (weights and metrics), which SageMaker can access directly.
