@@ -53,7 +53,7 @@ Skin cancer is a frequent form of cancer that can be deadly if not caught early.
 - sample-image.hdf5
 - sample-metadata.csv
 
-## B. Making the code functional:
+## B. :woman_mechanic: Making the code functional:
 After completing the installation, the code will be functional after the following steps:
 -	Place all ipynb files in the same directory
 -	Place all csv and hdf5 files in a subdirectory to store input data ("/data" for example)
@@ -68,11 +68,11 @@ After completing the installation, the code will be functional after the followi
 #### generate_data_subset.ipynb (optional):
 - At top of code, declare the filepaths and filenames.
 
-## C. Run order:
+## C. :rotating_light: Run order:
 The *EDA* notebook must be run first. It generates a cleaned metadata file used by the *Model* notebook. The *generate_data_subset* notebook is optional and can be run on either the train-metadata.csv or cleaned-metadata.csv files to create a smaller, more manageable version that can be used with the other notebooks.
 
-# ► IV. Details on project notebooks
-## A. Using EDA.ipynb
+# ► IV. :mag_right: Details on project notebooks
+## A. :package: Using EDA.ipynb
 The EDA file takes a couple hours to run in general.  
 - Input files:
   - train-image.hdf5
@@ -82,7 +82,7 @@ The EDA file takes a couple hours to run in general.
 
 The EDA has multiple purposes. The unmodified metadata images are examined, including basic statistical parameters and the number of NAs. Some example images are printed to see what exactly the model will be dealing with. Different image augmentation algorithms are examined, with image printing to demonstrate them. Feature cleaning and normalization/standardization are performed. Then feature selection is performed, using 3 different models: Random Forest, Logistic Regression, and XGBoost. The final selected features are chosen manually, using the results from these models as a guide. Finally, the selected features are output into a file. This file contains isic_id, target, and cleaned features. It is the metadata input to Model.ipynb.
 
-## B. Using Model.ipynb:
+## B. :memo: Using Model.ipynb:
 The Model file is highly parametrizeable. A single run can take many hours or several minutes, depending on user selections (number of batches, sample size, hair removal, etc.). This will be detailed later.  
 - Input files:
   - train-image.hdf5
