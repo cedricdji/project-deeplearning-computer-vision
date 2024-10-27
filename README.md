@@ -1,4 +1,4 @@
- :page_facing_up: # Skin Cancer Detection with 3D-TBP using a CNN (ISIC 2024 Contest)
+# :page_facing_up:Skin Cancer Detection with 3D-TBP using a CNN (ISIC 2024 Contest)
 **Contest link:** https://www.kaggle.com/competitions/isic-2024-challenge
 
 # ► I. :rocket: Introduction
