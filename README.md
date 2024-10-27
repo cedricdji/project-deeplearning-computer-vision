@@ -21,6 +21,8 @@ Skin cancer is a frequent form of cancer that can be deadly if not caught early.
 1.	Python 3.11.9 environment
 2.	IDE with Jupyter Notebook extension
 3.	Conda (for environment creation)
+4.	AWS CLI configured with appropriate permissions to access S3 and SageMaker
+5.	Terraform for Infrastructure as Code (IaC) to provision AWS resources
    
 ### *Files:*
 ***Supplied***
@@ -28,6 +30,8 @@ Skin cancer is a frequent form of cancer that can be deadly if not caught early.
 -	Model.ipynb : Jupyter notebook containing the CNN model. Data augmentation is performed here.
 -	hdf5_write.ipynb : code that generates a subset of metadata and images (optional)
 -	requirements.txt : packages to be installed via pip in Conda
+-	deploy.yml: Automation file for structured deployment and workflow management
+-	main.tf: Terraform file defining the infrastructure (SageMaker instances, S3 bucket, IAM roles, etc.)
 
 ***On the Kaggle competition website (see link at top of readme)***  
 *Note 1: Inscription required. The data has non distribution clauses.*  
@@ -171,12 +175,32 @@ RAM: 8GB (16GB *usually* allows for validation data to be stored in memory)
 
 # ► VI. Server instances
 The model has been tested on AWS SageMaker linked to an S3 bucket, with the input and output files stored in the S3 bucket. The preferred architecture for fast training is:<br>
-***????????***
-***????????***
-***????????***
-***????????***
+•	Instance type: ml.g5.2xlarge (1 GPU NVIDIA A10G, 8 vCPU, 32GB RAM)
+•	Storage: Amazon S3 for data and artifact storage.
 
-# ► VII. Credit
+# ► VII. Deployment
+
+ ## Deployment Architecture
+The project is deployed using Amazon Web Services (AWS) with the following architecture:
+1.	AWS SageMaker : Used to run Jupyter notebooks for model training, with scalable instances that support GPU for faster training.
+2.	Amazon S3 : Stores input datasets and model artifacts (weights and metrics), which SageMaker can access directly.
+3.	Instance Type : The model training is optimized on the ml.g5.2xlarge(not free) instance type, which provides GPU support to reduce the computation time for complex deep learning tasks.
+
+## Deployment Process
+The entire deployment process is automated through the deploy.yml file, which orchestrates the workflow and executes each step seamlessly.
+1.	Data Preparation:
+o	The deploy.yml file includes the step to upload train-image.hdf5 and train-metadata.csv to an S3 bucket (e.g., images-projet-deep-learning-01) (or you can do it manually before the pipeline starting)
+2.	Environment Setup:
+o	The deploy.yml file manages the launch of a SageMaker instance (e.g., ml.g5.2xlarge), configured with the necessary IAM roles to access the S3 bucket.
+3.	Model Training:
+o	Model.ipynb is executed to train the CNN model on SageMaker. Data is retrieved from S3, and model weights are periodically saved back to S3.
+4.	Model Testing and Evaluation:
+o	After training, the deploy.yml file orchestrates model testing, saving evaluation metrics to model_results_save.csv and predictions to test_results_save.csv, both stored in S3.
+5.	Inference (Optional):
+o	For real-time inference, a SageMaker endpoint can be configured, or batch processing jobs can be run using the trained model weights stored in S3.
+
+
+# ► VIII. Credit
 The primary project was created by:<br>
 -	Claire Davat
 -	Wilfried Cédric Koffi Djivo
