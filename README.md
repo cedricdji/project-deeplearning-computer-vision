@@ -189,8 +189,8 @@ RAM: 8GB (16GB *usually* allows for validation data to be stored in memory)
 
 # ► VI. Server instances
 The model has been tested on AWS SageMaker linked to an S3 bucket, with the input and output files stored in the S3 bucket. The preferred architecture for fast training is:<br>
-•	Instance type: ml.g5.2xlarge (1 GPU NVIDIA A10G, 8 vCPU, 32GB RAM)
-•	Storage: Amazon S3 for data and artifact storage.
+-	Instance type: ml.g5.2xlarge (1 GPU NVIDIA A10G, 8 vCPU, 32GB RAM)
+-	Storage: Amazon S3 for data and artifact storage.
 
 # ► VII. :incoming_envelope: Deployment
 The notebooks are designed to run on both local machines and a server architecture. This section details the methods that apply to the server architecture.
@@ -201,7 +201,7 @@ The project is deployed using Amazon Web Services (AWS) with the following archi
 2.	Amazon S3 : Stores input datasets and model artifacts (weights and metrics), which SageMaker can access directly.
 3.	Instance Type : The model training is optimized on the ml.g5.2xlarge(not free) instance type, which provides GPU support to reduce the computation time for complex deep learning tasks.
 
-## Deployment Process
+## :clipboard: Deployment Process
 The entire deployment process is automated through the deploy.yml file, which orchestrates the workflow and executes each step seamlessly.
 1.	Data Preparation:
     - The deploy.yml file includes the step to upload train-image.hdf5 and train-metadata.csv to an S3 bucket (e.g., images-projet-deep-learning-01) (or you can do it manually before the pipeline starting)
