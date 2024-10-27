@@ -211,7 +211,6 @@ The project is deployed using Amazon Web Services (AWS) with the following archi
 
 ![](images/ci-cd-deploy.png)
 
->>>>>>> ingeneurie
 The entire deployment process is automated through the deploy.yml file, which orchestrates the workflow and executes each step seamlessly. The Model.ipynb file must have the correct settings for it to work properly (uncomment the pip install commands in the first notebook cell and set the use_sagemaker toggle to True).
 1.	Data Preparation:
     - The deploy.yml file includes the step to upload train-image.hdf5 and train-metadata.csv to an S3 bucket (e.g., images-projet-deep-learning-01) (or you can do it manually before the pipeline starting)
