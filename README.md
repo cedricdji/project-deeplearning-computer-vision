@@ -193,6 +193,7 @@ The model has been tested on AWS SageMaker linked to an S3 bucket, with the inpu
 •	Storage: Amazon S3 for data and artifact storage.
 
 # ► VII. Deployment
+The notebooks are designed to run on both local machines and a server architecture. This section details the methods that apply to the server architecture.
 
  ## Deployment Architecture
 The project is deployed using Amazon Web Services (AWS) with the following architecture:
