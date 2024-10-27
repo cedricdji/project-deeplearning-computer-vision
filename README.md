@@ -3,7 +3,11 @@
 
 # ► Introduction
 
-This project takes color images of skin lesions and growths and applies a convolutional neural network (CNN) to determine if the lesion is malignant or benign. The images are accompanied by metadata containing the target value (1 = malignant, 0 = benign) and other information. The data is highly unbalanced, with 393 malignant samples compared to 400666 benign. Data augmentation is performed on the Target = 1 samples. Feature selection is performed on the metadata. Two CNNs are examined: in-series and in-parallel models. The in-series model starts with convolutional layers, then concatenates the metadata before running a full neural network. The in-parallel model runs the metadata through a neural network in parallel with the convolutional layers, then concatenates the outputs before a final layer. In addition, a hair removal algorithm is examined. Each model is run with and without hair removal to determine the better approach.
+This project takes color images of skin lesions and growths and applies a convolutional neural network (CNN) to determine if the lesion is malignant or benign. The images are accompanied by metadata containing the target value (1 = malignant, 0 = benign) and other information. The data is highly unbalanced, with 393 malignant samples compared to 400666 benign. Data augmentation is performed on the Target = 1 samples. Feature selection is performed on the metadata.  
+
+Two CNNs are examined: in-series and in-parallel models. The in-series model starts with convolutional layers, then concatenates the metadata before running a full neural network. The in-parallel model runs the metadata through a neural network in parallel with the convolutional layers, then concatenates the outputs before a final layer. In addition, a hair removal algorithm is examined. Each model is run with and without hair removal to determine the better approach. The model structures are as follows:
+
+![](images/model_structures.png)
 
 # ► The interest of the project
 
